@@ -1,0 +1,43 @@
+project:
+  name: covert # 项目名称
+  exec: application # 可执行文件位置
+  before_script: |
+    echo hello
+  # 启动前脚本，可用于前置检查，如果脚本异常退出则视为此次启动失败
+  after_script: |
+    echo hello
+  # 程序退出后脚本，可用于回收数据
+  check_health: # 程序健康检查
+    script: |
+      exit 0
+    # 程序健康检查脚本，如果返回值不为 0 则视为出现问题
+    delay: 3s # 开始检测延时
+    interval: 10s # 检查间隔
+    failures: 5 # 视为失败的错误次数
+    fail_step: RESTART #  失败后动作 [WAIT,RESTART,EXIT]
+  check_started: # 程序启动完成检查
+    script: |
+      exit 0
+    # 程序启动检查脚本，如果返回值不为 0 则视为未启动完成
+    interval: 3s # 检查间隔
+args:
+  - key: "ADDRESS" # 传入参数 key
+    name: "地址" # 传入参数名称
+    from: # 来源 key
+      - IP
+    mode: ARG # 参数类型
+    must: false # 是否为必选
+    valid_regex: "" # 参数正则校验
+    valid_message: "xxxx {} failed" # 参数校验错误告警
+path: # 配置文件路径
+  - /etc/config
+  - file://{{user.dir}}
+  - file://{{user.home}}
+  - https://www.remote.com
+log: # 日志信息
+  console: # 控制台日志
+    level: INFO
+  file: # 文件日志
+    path: /var/log/app.log
+    level: INFO
+    append: true # 日志追加模式

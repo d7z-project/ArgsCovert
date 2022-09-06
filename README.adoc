@@ -1,0 +1,16 @@
+= 配置文件转换器
+:experimental:
+:icons: font
+:toc: right
+:toc-title: 目录
+:toclevels: 4
+:source-highlighter: rouge
+
+将配置文件内容转换为程序入参或者环境变量,支持 *properties* 和 *yaml*
+
+默认配置如下：
+
+[source%linenums,yaml]
+----
+include::config.yaml[]
+----

@@ -1,0 +1,15 @@
+[package]
+name = "args_covert"
+version = "1.0.0"
+edition = "2021"
+description = "Config Properties Cover"
+license = "MIT"
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+serde_yaml = "0.9"
+
+[profile.release]
+lto = true
+opt-level = 'z'
+panic = 'abort'
