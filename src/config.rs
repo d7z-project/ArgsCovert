@@ -1,14 +1,17 @@
 pub mod project_conf {
-    use std::{env, fs, io};
+    use std::{env, fs};
     use std::env::args;
+    use std::io::Error as IOError;
     use std::io::ErrorKind;
     use std::ops::Not;
     use std::path::Path;
     use serde::{Serialize, Deserialize};
+    use crate::lib::SoftError;
 
-    pub fn load_info() -> Result<ProjectConfig, io::Error> {
+    pub fn load_info() -> Result<ProjectConfig, SoftError> {
         let execute_path = env::current_exe()?;
-        let execute_path = Path::new(execute_path.to_str().unwrap());
+        let execute_path = Path::new(execute_path.to_str()
+            .ok_or(IOError::new(ErrorKind::Other, ""))?);
         let config_file_path = args().last().filter(|e|
             e.eq(execute_path.to_str().unwrap()).not()
         ).unwrap_or_else(|| {
@@ -19,10 +22,12 @@ pub mod project_conf {
         let path = Path::new(&config_file_path);
 
         if path.is_file().not() {
-            return Err(io::Error::new(ErrorKind::Other, format!("配置文件 {} 不存在.", &config_file_path).to_string()));
+            Err(IOError::new(ErrorKind::Other, format!("配置文件 {} 不存在.", &config_file_path).to_string()))?;
         };
         let data = fs::read_to_string(path)?;
-        serde_yaml::from_str(&data).map_err(|e| io::Error::new(ErrorKind::Other, e.to_string()))
+        let result: ProjectConfig = serde_yaml::from_str(&data)
+            .map_err(|e| IOError::new(ErrorKind::Other, e.to_string()))?;
+        Ok(result)
     }
 
 

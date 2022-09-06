@@ -1,5 +1,5 @@
 use std::env;
-use std::env::{args};
+use std::env::args;
 
 fn main() {
     println!("传入的参数有：");
