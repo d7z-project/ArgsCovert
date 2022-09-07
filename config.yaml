@@ -1,6 +1,6 @@
 project:
   name: covert # 项目名称
-  exec: application # 可执行文件位置
+  binary: test.sh # 可执行文件位置
   before_script: |
     echo hello
   # 启动前脚本，可用于前置检查，如果脚本异常退出则视为此次启动失败
@@ -41,3 +41,6 @@ log: # 日志信息
     path: /var/log/app.log
     level: INFO
     append: true # 日志追加模式
+attach:
+  key: value
+  port: 8080
