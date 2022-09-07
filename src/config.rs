@@ -130,18 +130,12 @@ pub mod project_conf {
         pub valid_message: String,
     }
 
-    #[derive(Serialize, Deserialize, PartialEq, Debug)]
+    #[derive(Serialize, Deserialize, PartialEq, Debug, Copy, Clone)]
     pub enum SourceKeyMode {
         ARG,
         ENV,
     }
 
-    #[derive(Serialize, Deserialize, PartialEq, Debug)]
-    pub enum ProjectSource {
-        ENV,
-        FILE,
-        NETWORK,
-    }
 
     #[derive(Serialize, Deserialize, PartialEq, Debug)]
     pub struct ProjectInfo {

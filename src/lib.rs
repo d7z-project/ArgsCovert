@@ -13,7 +13,7 @@ impl Display for SoftError {
         match self {
             SoftError::StdErr(err) => write!(f, "StdError: {}", err),
             SoftError::IoErr(err) => write!(f, "IOError: {}", err),
-            SoftError::AppError(err) => write!(f, "AppError: {}", err)
+            SoftError::AppError(err) => write!(f, "{}", err)
         }
     }
 }
@@ -33,9 +33,10 @@ impl From<std::io::Error> for SoftError {
         Self::IoErr(value)
     }
 }
+
 impl From<Infallible> for SoftError {
     fn from(value: Infallible) -> Self {
-        Self::IoErr(std::io::Error::new(Other,value))
+        Self::IoErr(std::io::Error::new(Other, value))
     }
 }
 

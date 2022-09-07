@@ -26,12 +26,12 @@ args:
     from: # 来源 key
       - IP
     mode: ARG # 参数类型
-    must: false # 是否为必选
+    must: true # 是否为必选
     valid_regex: "" # 参数正则校验
     valid_message: "xxxx {} failed" # 参数校验错误告警
 path: # 配置文件路径
   - /etc/config
-  - file://{{user.dir}}
+  - file://{{user.dir}}/examples/test.properties
   - file://{{user.home}}
   - https://www.remote.com
 log: # 日志信息
@@ -41,6 +41,6 @@ log: # 日志信息
     path: /var/log/app.log
     level: INFO
     append: true # 日志追加模式
-attach:
+attach: # 内部替换变量
   key: value
   port: 8080
