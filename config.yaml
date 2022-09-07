@@ -39,7 +39,7 @@ log: # 日志信息
   console: # 控制台日志
     level: INFO
   file: # 文件日志
-    path: /var/log/app.log
+    path: /tmp/data.log
     level: INFO
     append: true # 日志追加模式
 attach: # 内部替换变量

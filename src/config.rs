@@ -1,7 +1,7 @@
 pub mod project_conf {
     use std::{env, fs};
     use std::collections::HashMap;
-    use std::fs::canonicalize;
+    use std::fs::{canonicalize};
     use std::io::Error as IOError;
     use std::io::ErrorKind;
     use std::ops::{Not};
@@ -10,6 +10,7 @@ pub mod project_conf {
     use serde::{Serialize, Deserialize};
     use crate::lib::SoftError;
     use crate::utils;
+    use is_executable::IsExecutable;
 
     /**
     加载配置文件
@@ -64,6 +65,9 @@ pub mod project_conf {
         if PathBuf::from(&result.project.binary).is_file().not() {
             return Err(SoftError::AppError(format!("可执行文件 {} 不存在.", &result.project.binary).to_string()));
         }
+        if Path::new(&result.project.binary).is_executable().not() {
+            return Err(SoftError::AppError(format!("可执行文件 {} 无运行权限.", &result.project.binary).to_string()));
+        }
         result.attach = attrs.clone();
         data = serde_yaml::to_string(&result).unwrap();
         utils::string::replace_all_str(
@@ -109,7 +113,7 @@ pub mod project_conf {
         pub append: bool,
     }
 
-    #[derive(Serialize, Deserialize, PartialEq, Debug)]
+    #[derive(Serialize, Deserialize, PartialEq, Debug,Copy, Clone)]
     pub enum LoggerLevel {
         TRACE,
         DEBUG,
@@ -117,6 +121,23 @@ pub mod project_conf {
         WARN,
         ERROR,
         NONE,
+    }
+
+    pub trait LogLevelId {
+        fn id(&self) -> u8;
+    }
+
+    impl LogLevelId for LoggerLevel {
+        fn id(&self) -> u8 {
+            match self {
+                LoggerLevel::TRACE => 0,
+                LoggerLevel::DEBUG => 1,
+                LoggerLevel::INFO => 2,
+                LoggerLevel::WARN => 3,
+                LoggerLevel::ERROR => 4,
+                LoggerLevel::NONE => 5,
+            }
+        }
     }
 
     #[derive(Serialize, Deserialize, PartialEq, Debug)]

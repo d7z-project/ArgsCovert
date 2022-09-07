@@ -7,6 +7,7 @@ use std::time::{SystemTime, UNIX_EPOCH};
 use crate::config::project_conf::{ProjectArgs, ProjectConfig, SourceKeyMode};
 use crate::lib::SoftError;
 use crate::lib::SoftError::AppError;
+use crate::utils::log::warn;
 use crate::utils::string;
 
 #[derive(Debug)]
@@ -51,7 +52,7 @@ pub fn load_context(config: &ProjectConfig) -> Result<BinaryContext, SoftError> 
             load_form_local(&mut args_container, &format!("file://{}", conf), false)
         };
         if let Err(e) = res {
-            eprintln!("无法从 \"{}\" 位置加载配置，因为{}.", &conf, e)
+            warn(format!("无法从 \"{}\" 位置加载配置，因为{}.", &conf, e))
         }
     }
     for env_item in env::vars() {
