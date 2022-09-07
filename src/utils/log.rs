@@ -48,6 +48,7 @@ pub fn error(data: String) {
 }
 
 fn _output(level: LoggerLevel, message: &str) {
+    let message = message.trim();
     unsafe {
         if let Some(data) = &LOG_INFO {
             if data.console_level.id() <= level.id() {

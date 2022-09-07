@@ -1,6 +1,7 @@
 pub mod project_conf {
     use std::{env, fs};
     use std::collections::HashMap;
+    use std::fmt::{Display, Formatter};
     use std::fs::{canonicalize};
     use std::io::Error as IOError;
     use std::io::ErrorKind;
@@ -40,7 +41,6 @@ pub mod project_conf {
         result.attach.iter().for_each(|it| {
             (&mut attrs).entry(it.0.to_owned()).or_insert(it.1.to_owned());
         });
-
 
         let binary_paths = vec![
             PathBuf::from_str(&result.project.binary)?,
@@ -128,6 +128,36 @@ pub mod project_conf {
         fn id(&self) -> u8;
     }
 
+    impl Display for LoggerLevel {
+        fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+            let x = match self {
+                LoggerLevel::TRACE => "TRACE",
+                LoggerLevel::DEBUG => "DEBUG",
+                LoggerLevel::INFO => "INFO",
+                LoggerLevel::WARN => "WARN",
+                LoggerLevel::ERROR => "ERROR",
+                LoggerLevel::NONE => "NONE",
+            };
+            f.write_str(x)
+        }
+    }
+
+    impl FromStr for LoggerLevel {
+        type Err = SoftError;
+
+        fn from_str(s: &str) -> Result<Self, Self::Err> {
+            match s {
+                "TRACE" => Ok(LoggerLevel::TRACE),
+                "DEBUG" => Ok(LoggerLevel::DEBUG),
+                "INFO" => Ok(LoggerLevel::INFO),
+                "WARN" => Ok(LoggerLevel::WARN),
+                "ERROR" => Ok(LoggerLevel::ERROR),
+                "NONE" => Ok(LoggerLevel::NONE),
+                _ => Err(SoftError::AppError("unknown logger level".to_string()))
+            }
+        }
+    }
+
     impl LogLevelId for LoggerLevel {
         fn id(&self) -> u8 {
             match self {
@@ -198,6 +228,8 @@ pub mod soft_args {
     use std::env;
     use std::path::{PathBuf};
     use clap::Parser;
+    use crate::config::project_conf::LoggerLevel;
+    use crate::lib::SoftError;
 
     /// Easy Application Args covert.
     #[derive(Parser, Debug)]
@@ -209,11 +241,16 @@ pub mod soft_args {
         /// add variable
         #[clap(short = 'a', long = "--attach")]
         pub variable: Option<Vec<String>>,
+        /// logger level
+        #[clap(short = 'l', long = "--level", default_value_t = LoggerLevel::INFO)]
+        pub console_log_level: LoggerLevel,
     }
+
 
     #[derive(Debug)]
     pub struct SoftArgs {
         pub config_path: String,
+        pub log_level:LoggerLevel,
         pub variable: HashMap<String, String>,
     }
 
@@ -233,6 +270,7 @@ pub mod soft_args {
             attach.insert("user.home".to_string(), user_home.to_str().unwrap().to_string());
             attach.insert("app.dir".to_string(), env::current_exe().unwrap().parent().unwrap().to_str().unwrap().to_string());
             SoftArgs {
+                log_level:args.console_log_level,
                 config_path: args.config_path,
                 variable: attach,
             }

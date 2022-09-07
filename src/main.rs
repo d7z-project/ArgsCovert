@@ -20,7 +20,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     log_default();
     log::info_str("项目已经启动.");
     let args1 = SoftArgs::parse(); // 拉取参数
-    let soft_config = load_info(&args1.config_path, &args1.variable)?; // 加载系统配置
+    let mut soft_config = load_info(&args1.config_path, &args1.variable)?; // 加载系统配置
+    soft_config.log.console.level = args1.log_level;
     log_init(&soft_config);
     let data = load_context(&soft_config)?; // 载入并校验可用的参数
     fs::write(data.started_check_script_path, soft_config.project.check_started.script)?;
@@ -45,8 +46,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         envs,
     );
     worker.start();
-
+    // 项目启动完成。
     loop {
-        thread::sleep(Duration::from_secs(1));
+        println!("{:?}", worker.new_status());
+        thread::sleep(Duration::from_millis(500));
     }
 }
