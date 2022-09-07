@@ -24,10 +24,11 @@ args:
   - key: "ADDRESS" # 传入参数 key
     name: "地址" # 传入参数名称
     from: # 来源 key
-      - IP
+      - address
+      - ADDRESS
     mode: ARG # 参数类型
     must: true # 是否为必选
-    valid_regex: "" # 参数正则校验
+    valid_regex: "^123$" # 参数正则校验
     valid_message: "xxxx {} failed" # 参数校验错误告警
 path: # 配置文件路径
   - /etc/config
