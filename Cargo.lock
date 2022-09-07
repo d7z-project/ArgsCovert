@@ -17,6 +17,7 @@ version = "1.0.0"
 dependencies = [
  "clap",
  "is_executable",
+ "nonblock",
  "regex",
  "serde",
  "serde_yaml",
@@ -141,6 +142,15 @@ name = "memchr"
 version = "2.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2dffe52ecf27772e601905b7522cb4ef790d2cc203488bbd0e2fe85fcb74566d"
+
+[[package]]
+name = "nonblock"
+version = "0.2.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "51c7a4f22e5f2e2bd805d6ab56f1ae87eb1815673e1b452048896fb687a8a3d4"
+dependencies = [
+ "libc",
+]
 
 [[package]]
 name = "once_cell"

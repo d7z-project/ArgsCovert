@@ -110,10 +110,11 @@ pub mod project_conf {
     pub struct FileLog {
         pub level: LoggerLevel,
         pub path: String,
+        pub error_path: String,
         pub append: bool,
     }
 
-    #[derive(Serialize, Deserialize, PartialEq, Debug,Copy, Clone)]
+    #[derive(Serialize, Deserialize, PartialEq, Debug, Copy, Clone)]
     pub enum LoggerLevel {
         TRACE,
         DEBUG,

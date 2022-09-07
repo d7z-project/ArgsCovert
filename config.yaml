@@ -37,9 +37,10 @@ path: # 配置文件路径
   - https://www.remote.com
 log: # 日志信息
   console: # 控制台日志
-    level: INFO
+    level: TRACE
   file: # 文件日志
     path: /tmp/data.log
+    error_path: /tmp/data-error.log
     level: INFO
     append: true # 日志追加模式
 attach: # 内部替换变量

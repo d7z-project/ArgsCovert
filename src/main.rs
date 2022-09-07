@@ -8,11 +8,13 @@ use std::{fs, thread};
 use std::time::Duration;
 use crate::utils::log;
 use crate::utils::log::{log_default, log_init};
+use crate::worker::binary_worker::StableWorker;
 
 mod config;
 mod lib;
 mod utils;
 mod binary;
+mod worker;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     log_default();
@@ -25,22 +27,26 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     fs::write(data.health_check_script_path, soft_config.project.check_health.script)?;
     fs::write(data.before_script_path, soft_config.project.before_script)?;
     fs::write(data.after_script_path, soft_config.project.after_script)?;
-    let mut command = Command::new(soft_config.project.binary);
-    command.envs(data.envs);
+
+    let mut envs = data.envs.clone();
+    let mut args: Vec<String> = vec![];
     for x in data.args {
         match x.mode {
-            SourceKeyMode::ARG => { command.arg(x.key).arg(x.value); }
-            SourceKeyMode::ENV => { command.env(x.key, x.value); }
+            SourceKeyMode::ARG => {
+                args.push(x.key);
+                args.push(x.value);
+            }
+            SourceKeyMode::ENV => { envs.insert(x.key, x.value); }
         }
     };
-    command.stdout(Stdio::piped());
-    let mut child = command.spawn().unwrap();
-    let mut stdout = child.stdout.take().unwrap();
+    let worker = StableWorker::new(
+        soft_config.project.binary.to_owned(),
+        args,
+        envs,
+    );
+    worker.start();
+
     loop {
-        let mut x1 = [0; 1024];
-        log::info(format!("{:?}", stdout.read(&mut x1)));
-        log::info(format!("{}", String::from_utf8_lossy(&x1)));
         thread::sleep(Duration::from_secs(1));
-        log::info(format!("{:?}", &child.try_wait().unwrap()));
     }
 }
