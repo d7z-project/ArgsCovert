@@ -102,24 +102,34 @@ pub fn log_init(soft_config: &ProjectConfig) {
             fs::remove_file(error_file_path).expect("日志文件无法写入！");
         }
     }
-    let path = OpenOptions::new()
-        .create(true)
-        .write(true)
-        .append(true) // This is needed to append to file
-        .open(file_path)
-        .expect("日志文件权限问题，请处理日志权限");
-    let error_path = OpenOptions::new()
-        .create(true)
-        .write(true)
-        .append(true) // This is needed to append to file
-        .open(error_file_path)
-        .expect("日志文件权限问题，请处理日志权限");
+    if soft_config.log.file.level == NONE {}
+    let file_path = Some(file_path)
+        .filter(|_| soft_config.log.file.level == NONE)
+        .map(|e| {
+            OpenOptions::new()
+                .create(true)
+                .write(true)
+                .append(true) // This is needed to append to file
+                .open(e)
+                .expect("日志文件权限问题，请处理日志权限")
+        });
+    let error_path = Some(error_file_path)
+        .filter(|_| soft_config.log.file.level.id() < WARN.id())
+        .map(|e| {
+            OpenOptions::new()
+                .create(true)
+                .write(true)
+                .append(true) // This is needed to append to file
+                .open(e)
+                .expect("日志文件权限问题，请处理日志权限")
+        });
+
     unsafe {
         LOG_INFO = Some(LoggerInfo {
             file_level: soft_config.log.file.level.clone(),
             console_level: soft_config.log.console.level.clone(),
-            file_path: Some(path),
-            error_file_path: Some(error_path),
+            file_path,
+            error_file_path: error_path,
         });
     }
 }

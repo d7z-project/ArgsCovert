@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::ops::Not;
 
 pub fn _replace_range(src: &mut String, old: &str, new: &str) {
     'l: loop {
@@ -33,5 +34,11 @@ pub fn replace_all_str(src: &mut String, data: &Vec<(String, String)>) {
                 break 'l;
             }
         }
+    }
+}
+
+pub fn not_blank_then(data: String, func: &fn(String)) {
+    if data.trim().is_empty().not() {
+        func(data)
     }
 }

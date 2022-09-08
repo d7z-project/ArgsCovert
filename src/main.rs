@@ -12,7 +12,7 @@ use crate::binary::args_builder::load_context;
 use crate::config::project_conf::load_info;
 use crate::config::project_conf::RestartPolicy::{FAIL, NONE};
 use crate::config::soft_args::SoftArgs;
-use crate::log::debug_str;
+use crate::log::{debug_str, error_str, info_str};
 use crate::utils::command::execute_script;
 use crate::utils::file::new_temp_path;
 use crate::utils::log;
@@ -65,6 +65,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .filter(|e| e.is_empty().not())
         .map(|e| {
             ScriptWorker::new(
+                "健康检查任务",
                 &soft_config.project.script_worker,
                 e,
                 &data.envs,
@@ -79,6 +80,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .filter(|e| e.is_empty().not())
         .map(|e| {
             ScriptWorker::new(
+                "启动完成检查任务",
                 &soft_config.project.script_worker,
                 e,
                 &data.envs,
@@ -113,7 +115,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 }
             }
             if health_fail.get() >= soft_config.project.check_health.failures as i32 {
-                debug_str("健康检查失败！");
+                error_str("健康检查失败！主进程将重启。");
                 health_check.stop();
                 stable_worker.restart();
                 enable_check();
@@ -131,20 +133,21 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
                 && started_success.get() != -1
             {
                 started_check.stop();
-                debug_str("启动成功！回调脚本");
+                info_str("启动成功！回调脚本");
                 let status = execute_script(
+                    "启动成功回调钩子",
                     &soft_config.project.script_worker,
                     &soft_config.project.check_started.started_script,
                     &data.envs,
                 );
                 if let Ok(code) = status {
                     if code == 0 {
-                        debug_str("启动检测回调执行完成。")
+                        info_str("启动检测回调执行完成。")
                     } else {
-                        debug_str("启动检测回调执行失败。")
+                        error_str("启动检测回调执行失败。")
                     }
                 } else {
-                    debug_str("启动检测回调执行失败。")
+                    error_str("启动检测回调执行失败。")
                 }
                 started_success.set(-1);
             }

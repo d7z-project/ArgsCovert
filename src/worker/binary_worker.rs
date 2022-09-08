@@ -100,11 +100,12 @@ impl StableWorker {
                         &before_path,
                         String::from_utf8_lossy(&data.stdout).to_string()
                     ));
-                    error(format!(
-                        "前置钩子错误输出 - {} => \n {}",
-                        &before_path,
-                        String::from_utf8_lossy(&data.stderr).to_string()
-                    ));
+                    for x in Some(String::from_utf8_lossy(&data.stderr).to_string())
+                        .filter(|e| e.trim().is_empty().not())
+                    {
+                        error(format!("前置钩子错误输出 - {} => \n {}", &before_path, x));
+                    }
+
                     if data.status.code().unwrap_or(-1) != 0 {
                         {
                             if let Ok(mut lock) = callback_action.lock() {
@@ -137,16 +138,16 @@ impl StableWorker {
                     .arg(&after_path)
                     .output()
                 {
-                    info(format!(
-                        "销毁钩子标准输出 - {} => \n {}",
-                        &after_path,
-                        String::from_utf8_lossy(&data.stdout).to_string()
-                    ));
-                    error(format!(
-                        "销毁钩子错误输出 - {} => \n {}",
-                        &after_path,
-                        String::from_utf8_lossy(&data.stderr).to_string()
-                    ));
+                    for x in Some(String::from_utf8_lossy(&data.stdout).to_string())
+                        .filter(|e| e.trim().is_empty().not())
+                    {
+                        info(format!("销毁钩子标准输出 - {} => \n {}", &after_path, x));
+                    }
+                    for x in Some(String::from_utf8_lossy(&data.stderr).to_string())
+                        .filter(|e| e.trim().is_empty().not())
+                    {
+                        error(format!("销毁钩子错误输出 - {} => \n {}", &after_path, x));
+                    }
                 }
             }
         };

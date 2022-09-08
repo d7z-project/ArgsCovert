@@ -6,12 +6,11 @@ use crate::{debug_str, log};
 use std::cmp::min;
 use std::collections::HashMap;
 use std::ops::Not;
-use std::path::Path;
 use std::process::Command;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{channel, Receiver, Sender, SyncSender};
 use std::sync::{mpsc, Arc};
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::time::Duration;
 use std::{env, fs, thread};
 
 pub struct ScriptWorker {
@@ -70,6 +69,7 @@ struct ScriptThreadInfo {
     pub script_path: String,
     pub exited: Arc<AtomicBool>,
     receiver: Receiver<WorkerAction>,
+    name: String,
 }
 
 /**
@@ -109,18 +109,25 @@ impl ScriptWorker {
                 .envs(&info.envs)
                 .output()
             {
-                log::info(format!(
-                    "脚本标准输出 - {} => \n {}",
-                    &info.script_path,
-                    String::from_utf8_lossy(&data.stdout).to_string()
-                ));
-                error(format!(
-                    "脚本错误输出 - {} => \n {}",
-                    &info.script_path,
-                    String::from_utf8_lossy(&data.stderr).to_string()
-                ));
+                for x in Some(String::from_utf8_lossy(&data.stdout).to_string())
+                    .filter(|e| e.is_empty().not())
+                {
+                    log::info(format!(
+                        "{} 任务标准输出 - {} => \n {}",
+                        &info.name, &info.script_path, x
+                    ));
+                }
+                for x in Some(String::from_utf8_lossy(&data.stderr).to_string())
+                    .filter(|e| e.is_empty().not())
+                {
+                    error(format!(
+                        "{} 任务错误输出 - {} => \n {}",
+                        &info.name, &info.script_path, x
+                    ));
+                }
+
                 if data.status.code().unwrap_or(-1) != 0 {
-                    debug_str("脚本执行完成，但状态异常。");
+                    debug_str("执行完成，但状态异常。");
                     info.sender.send(1).unwrap();
                 } else {
                     debug_str("脚本执行完成，退出正常。");
@@ -133,12 +140,14 @@ impl ScriptWorker {
         info.exited.swap(true, Ordering::Release);
     }
     pub fn new(
+        name: &str,
         interpreter: &String,
         script: &String,
         envs: &HashMap<String, String>,
         delay: usize,
         interval: usize,
     ) -> Result<Self, SoftError> {
+        let name = name.to_string();
         let to_master: (SyncSender<usize>, Receiver<usize>) = mpsc::sync_channel(255);
         let to_thread: (SyncSender<WorkerAction>, Receiver<WorkerAction>) = mpsc::sync_channel(255);
         let worker_script_path = new_temp_path("args-worker-script");
@@ -151,6 +160,7 @@ impl ScriptWorker {
         let arc = Arc::new(AtomicBool::new(false));
         let arc1 = Arc::clone(&arc);
         let worker = ScriptThreadInfo {
+            name,
             exited: arc,
             interpreter: interpreter.clone(),
             envs: envs.clone(),

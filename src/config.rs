@@ -1,7 +1,9 @@
 pub mod project_conf {
+    use crate::config::project_conf::RestartPolicy::ALWAYS;
     use crate::lib::SoftError;
     use crate::utils;
     use is_executable::IsExecutable;
+    use libc::{SIGHUP, SIGKILL, SIGTERM};
     use serde::{Deserialize, Serialize};
     use std::collections::HashMap;
     use std::fmt::{Display, Formatter};
@@ -101,7 +103,12 @@ pub mod project_conf {
         pub args: Vec<ProjectArgs>,
         pub path: Vec<String>,
         pub log: ProjectLog,
+        #[serde(default = "default_map")]
         pub attach: HashMap<String, String>,
+    }
+
+    fn default_map() -> HashMap<String, String> {
+        HashMap::new()
     }
 
     #[derive(Serialize, Deserialize, PartialEq, Debug)]
@@ -112,15 +119,36 @@ pub mod project_conf {
 
     #[derive(Serialize, Deserialize, PartialEq, Debug)]
     pub struct ConsoleLog {
+        #[serde(default = "console_log_level")]
         pub level: LoggerLevel,
+    }
+
+    fn console_log_level() -> LoggerLevel {
+        LoggerLevel::NONE
     }
 
     #[derive(Serialize, Deserialize, PartialEq, Debug)]
     pub struct FileLog {
+        #[serde(default = "file_log_level")]
         pub level: LoggerLevel,
+        #[serde(default = "file_log_path")]
         pub path: String,
+        #[serde(default = "file_log_path")]
         pub error_path: String,
+        #[serde(default = "bool_enable")]
         pub append: bool,
+    }
+
+    fn bool_enable() -> bool {
+        true
+    }
+
+    fn file_log_path() -> String {
+        "/tmp/test.log".to_string()
+    }
+
+    fn file_log_level() -> LoggerLevel {
+        LoggerLevel::NONE
     }
 
     #[derive(Serialize, Deserialize, PartialEq, Debug, Copy, Clone)]
@@ -193,9 +221,24 @@ pub mod project_conf {
 
     #[derive(Serialize, Deserialize, PartialEq, Debug, Copy, Clone)]
     pub struct SoftSignals {
+        #[serde(default = "i32_data_1")]
         pub reload: i32,
+        #[serde(default = "i32_data_15")]
         pub exit: i32,
+        #[serde(default = "i32_data_9")]
         pub kill: i32,
+    }
+
+    fn i32_data_1() -> i32 {
+        SIGHUP
+    }
+
+    fn i32_data_15() -> i32 {
+        SIGTERM
+    }
+
+    fn i32_data_9() -> i32 {
+        SIGKILL
     }
 
     #[derive(Serialize, Deserialize, PartialEq, Debug, Copy, Clone)]
@@ -208,13 +251,29 @@ pub mod project_conf {
     pub struct ProjectInfo {
         pub name: String,
         pub binary: String,
+        #[serde(default = "empty_str")]
         pub before_script: String,
+        #[serde(default = "empty_str")]
         pub after_script: String,
         pub check_health: HealthCheck,
         pub check_started: StartedCheck,
         pub signals: SoftSignals,
+        #[serde(default = "def_restart_policy")]
         pub restart_policy: RestartPolicy,
+        #[serde(default = "bash_str")]
         pub script_worker: String,
+    }
+
+    fn def_restart_policy() -> RestartPolicy {
+        ALWAYS
+    }
+
+    fn bash_str() -> String {
+        "bash".to_string()
+    }
+
+    fn empty_str() -> String {
+        "".to_string()
     }
 
     #[derive(Serialize, Deserialize, PartialEq, Debug)]
