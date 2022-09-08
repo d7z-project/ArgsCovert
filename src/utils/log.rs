@@ -1,17 +1,17 @@
-use std::{env, fs};
-use std::fs::{File, OpenOptions};
-use crate::config::project_conf::{LoggerLevel, LogLevelId, ProjectConfig};
 use crate::config::project_conf::LoggerLevel::{DEBUG, ERROR, INFO, NONE, TRACE, WARN};
+use crate::config::project_conf::{LogLevelId, LoggerLevel, ProjectConfig};
+use chrono::Local;
+use std::fs::{File, OpenOptions};
 use std::io::Write;
 use std::ops::Not;
-use std::path::{PathBuf};
-use chrono::Local;
+use std::path::PathBuf;
+use std::{env, fs};
 
 struct LoggerInfo {
     pub console_level: LoggerLevel,
     pub file_level: LoggerLevel,
-    pub file_path: File,
-    error_file_path: File,
+    pub file_path: Option<File>,
+    error_file_path: Option<File>,
 }
 
 static mut LOG_INFO: Option<LoggerInfo> = None;
@@ -67,31 +67,31 @@ fn _output(level: LoggerLevel, message: &str) {
             }
             if data.file_level.id() <= level.id() {
                 if level.id() >= WARN.id() {
-                    if let Err(_) = writeln!(&data.error_file_path, "{} - {:?} - {}", time, level, message) {}
+                    for mut x in &data.error_file_path {
+                        if let Err(_) = writeln!(x, "{} - {:?} - {}", time, level, message) {}
+                    }
                 } else {
-                    if let Err(_) = writeln!(&data.file_path, "{} - {:?} - {}", time, level, message) {}
+                    for mut x in &data.file_path {
+                        if let Err(_) = writeln!(x, "{} - {:?} - {}", time, level, message) {}
+                    }
                 }
             }
         }
     }
 }
 
-pub fn log_default() {
+pub fn log_default(level: LoggerLevel) {
     unsafe {
-        let mut buf = env::temp_dir();
-        buf.push("test.log");
         LOG_INFO = Some(LoggerInfo {
-            file_level: INFO,
+            file_level: level,
             console_level: NONE,
-            file_path: File::create(&buf).unwrap(),
-            error_file_path: File::create(&buf).unwrap(),
+            file_path: None,
+            error_file_path: None,
         });
     }
 }
 
-pub fn log_init(
-    soft_config: &ProjectConfig,
-) {
+pub fn log_init(soft_config: &ProjectConfig) {
     let file_path = &PathBuf::from(&soft_config.log.file.path);
     let error_file_path = &PathBuf::from(&soft_config.log.file.error_path);
     if (soft_config.log.file.append).not() {
@@ -107,19 +107,19 @@ pub fn log_init(
         .write(true)
         .append(true) // This is needed to append to file
         .open(file_path)
-        .unwrap();
+        .expect("日志文件权限问题，请处理日志权限");
     let error_path = OpenOptions::new()
         .create(true)
         .write(true)
         .append(true) // This is needed to append to file
         .open(error_file_path)
-        .unwrap();
+        .expect("日志文件权限问题，请处理日志权限");
     unsafe {
         LOG_INFO = Some(LoggerInfo {
             file_level: soft_config.log.file.level.clone(),
             console_level: soft_config.log.console.level.clone(),
-            file_path: path,
-            error_file_path: error_path,
+            file_path: Some(path),
+            error_file_path: Some(error_path),
         });
     }
 }

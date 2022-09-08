@@ -15,13 +15,12 @@ pub enum ScriptStatus {
  **/
 impl ScriptWorker {
     fn new(
-        work_path: &PathBuf,
+        script_worker: String,
         script: String,
-        parser: String,
         env: HashMap<String, String>,
         is_loop: bool,
-        delay:usize,
-        interval:usize,
+        delay: usize,
+        interval: usize,
     ) -> Self {
         todo!()
     }

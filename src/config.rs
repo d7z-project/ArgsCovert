@@ -1,60 +1,68 @@
 pub mod project_conf {
-    use std::{env, fs};
-    use std::collections::HashMap;
-    use std::fmt::{Display, Formatter};
-    use std::fs::{canonicalize};
-    use std::io::Error as IOError;
-    use std::io::ErrorKind;
-    use std::ops::{Not};
-    use std::path::{Path, PathBuf};
-    use std::str::FromStr;
-    use serde::{Serialize, Deserialize};
     use crate::lib::SoftError;
     use crate::utils;
     use is_executable::IsExecutable;
+    use serde::{Deserialize, Serialize};
+    use std::collections::HashMap;
+    use std::fmt::{Display, Formatter};
+    use std::fs::canonicalize;
+    use std::io::{Error as IOError, ErrorKind};
+    use std::ops::Not;
+    use std::path::{Path, PathBuf};
+    use std::str::FromStr;
+    use std::{env, fs};
 
     /**
     加载配置文件
      */
-    pub fn load_info(config_path: &str, attrs: &HashMap<String, String>) -> Result<ProjectConfig, SoftError> {
+    pub fn load_info(
+        config_path: &str,
+        attrs: &HashMap<String, String>,
+    ) -> Result<ProjectConfig, SoftError> {
         let mut attrs = attrs.clone();
-        let path = canonicalize(Path::new(config_path)).map_err(
-            |_| SoftError::AppError(format!("配置文件 {} 不存在.", config_path).to_string())
-        )?;
+        let path = canonicalize(Path::new(config_path)).map_err(|_| {
+            SoftError::AppError(format!("配置文件 {} 不存在.", config_path).to_string())
+        })?;
         let path = path.as_path();
         if path.is_file().not() {
-            return Err(SoftError::AppError(format!("配置文件 {} 不存在.", config_path).to_string()));
+            return Err(SoftError::AppError(
+                format!("配置文件 {} 不存在.", config_path).to_string(),
+            ));
         };
         let mut data = fs::read_to_string(path)?;
         let _static_var = String::from("{{item}}");
         utils::string::replace_all_str(
             &mut data,
-            &attrs.iter()
-                .map(|e| {
-                    (_static_var.replace("item", e.0), e.1.to_string())
-                })
+            &attrs
+                .iter()
+                .map(|e| (_static_var.replace("item", e.0), e.1.to_string()))
                 .collect(),
         );
 
         let mut result: ProjectConfig = serde_yaml::from_str(&data)
             .map_err(|e| IOError::new(ErrorKind::Other, e.to_string()))?;
         result.attach.iter().for_each(|it| {
-            (&mut attrs).entry(it.0.to_owned()).or_insert(it.1.to_owned());
+            (&mut attrs)
+                .entry(it.0.to_owned())
+                .or_insert(it.1.to_owned());
         });
 
         let binary_paths = vec![
             PathBuf::from_str(&result.project.binary)?,
-            PathBuf::from(
-                format!("{}{}",
-                        canonicalize(path.parent()
-                            .unwrap())?.to_str().unwrap(), &result.project.binary)),
-            PathBuf::from(
-                format!("{}{}",
-                        canonicalize(env::current_dir()
-                            .unwrap())?.to_str().unwrap(), &result.project.binary)),
+            PathBuf::from(format!(
+                "{}{}",
+                canonicalize(path.parent().unwrap())?.to_str().unwrap(),
+                &result.project.binary
+            )),
+            PathBuf::from(format!(
+                "{}{}",
+                canonicalize(env::current_dir().unwrap())?.to_str().unwrap(),
+                &result.project.binary
+            )),
         ];
         for binary_path in binary_paths {
-            if binary_path.is_file() { // 如果文件存在
+            if binary_path.is_file() {
+                // 如果文件存在
                 let binary_path = canonicalize(&binary_path).unwrap();
                 let binary_path = binary_path.to_str().unwrap();
                 attrs.insert("binary.location".to_string(), binary_path.to_string());
@@ -63,26 +71,29 @@ pub mod project_conf {
             }
         }
         if PathBuf::from(&result.project.binary).is_file().not() {
-            return Err(SoftError::AppError(format!("可执行文件 {} 不存在.", &result.project.binary).to_string()));
+            return Err(SoftError::AppError(
+                format!("可执行文件 {} 不存在.", &result.project.binary).to_string(),
+            ));
         }
         if Path::new(&result.project.binary).is_executable().not() {
-            return Err(SoftError::AppError(format!("可执行文件 {} 无运行权限.", &result.project.binary).to_string()));
+            return Err(SoftError::AppError(
+                format!("可执行文件 {} 无运行权限.", &result.project.binary).to_string(),
+            ));
         }
         result.attach = attrs.clone();
         data = serde_yaml::to_string(&result).unwrap();
         utils::string::replace_all_str(
             &mut data,
-            &result.attach.iter()
-                .map(|e| {
-                    (_static_var.replace("item", e.0), e.1.to_string())
-                })
+            &result
+                .attach
+                .iter()
+                .map(|e| (_static_var.replace("item", e.0), e.1.to_string()))
                 .collect(),
         );
         let result: ProjectConfig = serde_yaml::from_str(&data)
             .map_err(|e| IOError::new(ErrorKind::Other, e.to_string()))?;
         Ok(result)
     }
-
 
     #[derive(Serialize, Deserialize, PartialEq, Debug)]
     pub struct ProjectConfig {
@@ -93,12 +104,10 @@ pub mod project_conf {
         pub attach: HashMap<String, String>,
     }
 
-
     #[derive(Serialize, Deserialize, PartialEq, Debug)]
     pub struct ProjectLog {
         pub console: ConsoleLog,
         pub file: FileLog,
-
     }
 
     #[derive(Serialize, Deserialize, PartialEq, Debug)]
@@ -153,7 +162,7 @@ pub mod project_conf {
                 "WARN" => Ok(LoggerLevel::WARN),
                 "ERROR" => Ok(LoggerLevel::ERROR),
                 "NONE" => Ok(LoggerLevel::NONE),
-                _ => Err(SoftError::AppError("unknown logger level".to_string()))
+                _ => Err(SoftError::AppError("unknown logger level".to_string())),
             }
         }
     }
@@ -195,7 +204,6 @@ pub mod project_conf {
         ENV,
     }
 
-
     #[derive(Serialize, Deserialize, PartialEq, Debug)]
     pub struct ProjectInfo {
         pub name: String,
@@ -206,7 +214,7 @@ pub mod project_conf {
         pub check_started: StartedCheck,
         pub signals: SoftSignals,
         pub restart_policy: RestartPolicy,
-
+        pub script_worker: String,
     }
 
     #[derive(Serialize, Deserialize, PartialEq, Debug)]
@@ -216,7 +224,6 @@ pub mod project_conf {
         pub interval: String,
         pub failures: u16,
     }
-
 
     ///重启策略
     #[derive(Serialize, Deserialize, PartialEq, Debug, Copy, Clone)]
@@ -238,12 +245,12 @@ pub mod project_conf {
 }
 
 pub mod soft_args {
+    use crate::config::project_conf::LoggerLevel;
+    use crate::log_default;
+    use clap::Parser;
     use std::collections::HashMap;
     use std::env;
-    use std::path::{PathBuf};
-    use clap::Parser;
-    use crate::config::project_conf::LoggerLevel;
-    use crate::lib::SoftError;
+    use std::path::PathBuf;
 
     /// Easy Application Args covert.
     #[derive(Parser, Debug)]
@@ -260,7 +267,6 @@ pub mod soft_args {
         pub console_log_level: LoggerLevel,
     }
 
-
     #[derive(Debug)]
     pub struct SoftArgs {
         pub config_path: String,
@@ -271,18 +277,36 @@ pub mod soft_args {
     impl SoftArgs {
         pub fn parse() -> Self {
             let args: SoftStaticArgs = SoftStaticArgs::parse();
-            let mut attach: HashMap<String, String> = args.variable.
-                unwrap_or(vec![]).iter()
-                .map(|e| -> Vec<&str>  { e.splitn(2, "=").collect() })
+            let mut attach: HashMap<String, String> = args
+                .variable
+                .unwrap_or(vec![])
+                .iter()
+                .map(|e| -> Vec<&str> { e.splitn(2, "=").collect() })
                 .filter(|e| e.len() == 2)
                 .map(|e| (e.get(0).unwrap().to_string(), e.get(1).unwrap().to_string()))
                 .collect();
             let user_dir = env::current_dir().unwrap_or(PathBuf::new());
             #[allow(deprecated)]
-                let user_home = env::home_dir().unwrap();
-            attach.insert("user.dir".to_string(), user_dir.to_str().unwrap_or("").to_string());
-            attach.insert("user.home".to_string(), user_home.to_str().unwrap().to_string());
-            attach.insert("app.dir".to_string(), env::current_exe().unwrap().parent().unwrap().to_str().unwrap().to_string());
+            let user_home = env::home_dir().unwrap();
+            attach.insert(
+                "user.dir".to_string(),
+                user_dir.to_str().unwrap_or("").to_string(),
+            );
+            attach.insert(
+                "user.home".to_string(),
+                user_home.to_str().unwrap().to_string(),
+            );
+            attach.insert(
+                "app.dir".to_string(),
+                env::current_exe()
+                    .unwrap()
+                    .parent()
+                    .unwrap()
+                    .to_str()
+                    .unwrap()
+                    .to_string(),
+            );
+            log_default(args.console_log_level);
             SoftArgs {
                 log_level: args.console_log_level,
                 config_path: args.config_path,

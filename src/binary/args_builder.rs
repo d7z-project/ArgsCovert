@@ -1,14 +1,14 @@
-use std::collections::HashMap;
-use std::{env, fs};
-use std::ops::Not;
-use regex::Regex;
-use std::path::{Path, PathBuf};
-use std::time::{SystemTime, UNIX_EPOCH};
 use crate::config::project_conf::{ProjectArgs, ProjectConfig, SourceKeyMode};
 use crate::lib::SoftError;
 use crate::lib::SoftError::AppError;
 use crate::utils::log::warn;
 use crate::utils::string;
+use regex::Regex;
+use std::collections::HashMap;
+use std::ops::Not;
+use std::path::{Path, PathBuf};
+use std::time::{SystemTime, UNIX_EPOCH};
+use std::{env, fs};
 
 #[derive(Debug)]
 pub struct BinaryContext {
@@ -18,6 +18,7 @@ pub struct BinaryContext {
     pub after_script_path: PathBuf,
     pub started_check_script_path: PathBuf,
     pub health_check_script_path: PathBuf,
+    pub script_vars: HashMap<String, String>,
 }
 
 #[derive(Debug)]
@@ -26,7 +27,6 @@ pub struct BinaryArg {
     pub value: String,
     pub mode: SourceKeyMode,
 }
-
 
 /**
 加载配置文件当前上下文和环境变量的数据
@@ -37,9 +37,11 @@ pub struct BinaryArg {
 pub fn load_context(config: &ProjectConfig) -> Result<BinaryContext, SoftError> {
     let mut args_container: HashMap<String, String> = HashMap::new(); // 变量容器
     let var_replace = String::from("{{item}}");
-    let attrs: HashMap<String, String> = config.attach.iter().map(|e| {
-        (var_replace.replace("item", e.0), e.1.to_owned())
-    }).collect(); // 项目所有的变量
+    let attrs: HashMap<String, String> = config
+        .attach
+        .iter()
+        .map(|e| (var_replace.replace("item", e.0), e.1.to_owned()))
+        .collect(); // 项目所有的变量
     for conf in &config.path {
         let res = if conf.starts_with("file://") {
             // 加载本地文件
@@ -67,41 +69,60 @@ pub fn load_context(config: &ProjectConfig) -> Result<BinaryContext, SoftError> 
         if let Some(arg) = get_then_check_arg(&arg, &args_container)? {
             args.push(arg);
         }
-    }// 装入变量并检查合法性
+    } // 装入变量并检查合法性
     let system_time = SystemTime::now();
     let duration = system_time.duration_since(UNIX_EPOCH).unwrap();
-    let before_script_path = Path::new(env::temp_dir().as_path())
-        .join(format!("{}-script-before-{:?}.sh", config.project.name, duration));
-    let after_script_path = Path::new(env::temp_dir().as_path())
-        .join(format!("{}-script-after-{:?}.sh", config.project.name, duration));
+    let before_script_path = Path::new(env::temp_dir().as_path()).join(format!(
+        "{}-script-before-{:?}.sh",
+        config.project.name, duration
+    ));
+    let after_script_path = Path::new(env::temp_dir().as_path()).join(format!(
+        "{}-script-after-{:?}.sh",
+        config.project.name, duration
+    ));
 
-    let started_check_script_path = Path::new(env::temp_dir().as_path())
-        .join(format!("{}-script-started-{:?}.sh", config.project.name, duration));
+    let started_check_script_path = Path::new(env::temp_dir().as_path()).join(format!(
+        "{}-script-started-{:?}.sh",
+        config.project.name, duration
+    ));
 
-    let health_check_script_path = Path::new(env::temp_dir().as_path())
-        .join(format!("{}-script-health-{:?}.sh", config.project.name, duration));
+    let health_check_script_path = Path::new(env::temp_dir().as_path()).join(format!(
+        "{}-script-health-{:?}.sh",
+        config.project.name, duration
+    ));
     let mut out_envs: HashMap<String, String> = env::vars().collect();
     let mut out_args: Vec<String> = vec![];
+    let mut script_vars: HashMap<String, String> = attrs.clone();
     for x in args {
+        script_vars.insert(
+            var_replace.replace("item", &x.key).to_string(),
+            x.value.to_string(),
+        );
         match x.mode {
             SourceKeyMode::ARG => {
                 out_args.push(x.key);
                 out_args.push(x.value);
             }
-            SourceKeyMode::ENV => { out_envs.insert(x.key, x.value); }
+            SourceKeyMode::ENV => {
+                out_envs.insert(x.key, x.value);
+            }
         }
-    };
+    }
     Ok(BinaryContext {
         args: out_args,
         before_script_path,
         after_script_path,
         envs: out_envs,
+        script_vars,
         started_check_script_path,
         health_check_script_path,
     })
 }
 
-fn get_then_check_arg(args: &ProjectArgs, vars: &HashMap<String, String>) -> Result<Option<BinaryArg>, SoftError> {
+fn get_then_check_arg(
+    args: &ProjectArgs,
+    vars: &HashMap<String, String>,
+) -> Result<Option<BinaryArg>, SoftError> {
     let regex_str = args.valid_regex.trim();
     let regex = Regex::new(regex_str).map_err(|e| AppError(e.to_string()))?;
     for x in &args.from {
@@ -109,26 +130,34 @@ fn get_then_check_arg(args: &ProjectArgs, vars: &HashMap<String, String>) -> Res
             if regex_str.is_empty().not() {
                 // 带正则判断
                 if regex.is_match(data).not() {
-                    eprintln!("注意：传入参数 \"{}\" 对应的值 \"{}\" 校验失败.", x.to_string(), data);
+                    eprintln!(
+                        "注意：传入参数 \"{}\" 对应的值 \"{}\" 校验失败.",
+                        x.to_string(),
+                        data
+                    );
                     continue;
                 }
             }
-            return Ok(Some(
-                BinaryArg {
-                    key: args.key.to_string(),
-                    value: data.to_string(),
-                    mode: args.mode,
-                }
-            ));
+            return Ok(Some(BinaryArg {
+                key: args.key.to_string(),
+                value: data.to_string(),
+                mode: args.mode,
+            }));
         }
     }
     if args.must {
-        return Err(AppError(format!("未指定参数 \"{}\" 的值，项目无法启动.", args.key).to_string()));
+        return Err(AppError(
+            format!("未指定参数 \"{}\" 的值，项目无法启动.", args.key).to_string(),
+        ));
     }
     return Ok(None);
 }
 
-fn load_form_local(container: &mut HashMap<String, String>, config_path: &String, cover: bool) -> Result<(), SoftError> {
+fn load_form_local(
+    container: &mut HashMap<String, String>,
+    config_path: &String,
+    cover: bool,
+) -> Result<(), SoftError> {
     let path = config_path.replace("file://", "").trim().to_string();
     let buf = PathBuf::from(&path);
     if buf.is_file().not() {
@@ -145,18 +174,30 @@ fn load_form_local(container: &mut HashMap<String, String>, config_path: &String
     Ok(())
 }
 
-fn load_yaml(container: &mut HashMap<String, String>, data: String, cover: bool) -> Result<(), SoftError> {
+fn load_yaml(
+    container: &mut HashMap<String, String>,
+    data: String,
+    cover: bool,
+) -> Result<(), SoftError> {
     Err(AppError("暂未实现加载 YAML".to_string()))
 }
 
-fn load_form_remote(container: &mut HashMap<String, String>, config_path: &String, cover: bool) -> Result<(), SoftError> {
+fn load_form_remote(
+    container: &mut HashMap<String, String>,
+    config_path: &String,
+    cover: bool,
+) -> Result<(), SoftError> {
     Err(AppError("暂未实现加载网络配置".to_string()))
 }
 
-fn load_properties(container: &mut HashMap<String, String>, data: String, cover: bool) -> Result<(), SoftError> {
-    data.lines().filter(|e|
-        e.starts_with("#").not()
-    ).map(|e| -> Vec<&str>{ e.splitn(2, "=").collect() })
+fn load_properties(
+    container: &mut HashMap<String, String>,
+    data: String,
+    cover: bool,
+) -> Result<(), SoftError> {
+    data.lines()
+        .filter(|e| e.starts_with("#").not())
+        .map(|e| -> Vec<&str> { e.splitn(2, "=").collect() })
         .filter(|e| e.len() == 2)
         .map(|e| (e[0].to_string(), e[1].to_string()))
         .for_each(|e| {

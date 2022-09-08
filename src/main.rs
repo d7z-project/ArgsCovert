@@ -16,8 +16,9 @@ use crate::log::debug_str;
 use crate::utils::log;
 use crate::utils::log::{log_default, log_init};
 use crate::utils::signal_hook::UnixSignalHook;
+use crate::utils::string::{replace_all_str, replace_all_str_from_map};
 use crate::worker::binary_worker::CallbackAction::EXITED;
-use crate::worker::binary_worker::StableWorker;
+use crate::worker::binary_worker::{HookScripts, StableWorker};
 
 mod binary;
 mod config;
@@ -26,7 +27,6 @@ mod utils;
 mod worker;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    log_default();
     log::info_str("项目已经启动.");
     let args = SoftArgs::parse(); // 拉取参数
     let mut soft_config = load_info(&args.config_path, &args.variable)?; // 加载系统配置
@@ -34,21 +34,33 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     log_init(&soft_config);
     let data = load_context(&soft_config)?; // 载入并校验可用的参数
     let signal_hook = UnixSignalHook::new(vec![SIGINT, SIGTERM, SIGHUP]);
-
-    // fs::write(data.started_check_script_path, soft_config.project.check_started.script)?;
-    // fs::write(data.health_check_script_path, soft_config.project.check_health.script)?;
-    // fs::write(data.before_script_path, soft_config.project.before_script)?;
-    // fs::write(data.after_script_path, soft_config.project.after_script)?;
+    replace_all_str_from_map(&mut soft_config.project.before_script, &data.script_vars);
+    replace_all_str_from_map(&mut soft_config.project.after_script, &data.script_vars);
     let stable_worker = StableWorker::new(
         soft_config.project.binary.to_owned(),
         data.args,
         data.envs,
         &soft_config.project.signals,
+        HookScripts {
+            script_worker: soft_config.project.script_worker,
+            before_script: Some(soft_config.project.before_script),
+            after_script: Some(soft_config.project.after_script),
+        },
     ); // 主要进程工作区
     stable_worker.start();
     // 项目启动完成。
 
     loop {
+        let signals = signal_hook.signals().to_vec();
+        if signals.contains(&SIGINT) || signals.contains(&SIGTERM) {
+            // 收到停止命令，开始停止
+            debug_str("发现 SIGINT");
+            break;
+        } else if signals.contains(&SIGHUP) {
+            debug_str("发现 SIGHUP");
+            stable_worker.restart();
+        }
+
         if let Ok(nonblock) = stable_worker.status.try_lock() {
             if let EXITED(exit_code) = *nonblock {
                 if (exit_code == 0 && soft_config.project.restart_policy == FAIL)
@@ -69,8 +81,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 
         thread::sleep(Duration::from_millis(500));
     }
-    stable_worker.stop();
+    stable_worker.exit();
     debug_str("等待主工作线程退出..");
+    signal_hook.close();
     stable_worker.wait_exited();
     Ok(())
 }

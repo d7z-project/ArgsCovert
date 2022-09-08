@@ -1,8 +1,11 @@
 project:
   name: covert # 项目名称
   binary: test.sh # 可执行文件位置
+  script_worker: bash # 脚本解释器
   before_script: |
     echo hello
+    echo "{{ADDRESS}}"
+    exit 0
   # 启动前脚本，可用于前置检查，如果脚本异常退出则视为此次启动失败
   after_script: |
     echo hello
