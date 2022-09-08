@@ -12,19 +12,24 @@ project:
   # 程序退出后脚本，可用于回收数据
   check_health: # 程序健康检查
     script: |
-      exit 0
+      sleep 2
+      exit 1
+
     # 程序健康检查脚本，如果返回值不为 0 则视为出现问题
-    delay: 3s # 开始检测延时
-    interval: 10s # 检查间隔
-    failures: 5 # 视为失败的错误次数
+    delay: 3 # 开始检测延时
+    interval: 2 # 检查间隔
+    failures: 3 # 视为失败的错误次数
   check_started: # 程序启动完成检查
     script: |
+      echo 启动脚本钩子检测
       exit 0
     # 程序启动检查脚本，如果返回值不为 0 则视为未启动完成
     started_script: |
+      echo 启动脚本钩子执行完成
       exit 0
     # 程序启动完成钩子回调
-    interval: 3s # 检查间隔
+    interval: 0 # 检查间隔
+    success: 3 # 视为成功的次数
   signals: # 重启信号量
     reload: 1
     exit: 15

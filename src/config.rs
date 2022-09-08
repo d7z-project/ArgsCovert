@@ -220,8 +220,8 @@ pub mod project_conf {
     #[derive(Serialize, Deserialize, PartialEq, Debug)]
     pub struct HealthCheck {
         pub script: String,
-        pub delay: String,
-        pub interval: String,
+        pub delay: usize,
+        pub interval: usize,
         pub failures: u16,
     }
 
@@ -239,7 +239,8 @@ pub mod project_conf {
     #[derive(Serialize, Deserialize, PartialEq, Debug)]
     pub struct StartedCheck {
         pub script: String,
-        pub interval: String,
+        pub interval: usize,
+        pub success: usize,
         pub started_script: String,
     }
 }

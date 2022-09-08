@@ -15,11 +15,11 @@ pub struct UnixSignalHook {
 
 impl UnixSignalHook {
     pub fn signals(&self) -> Vec<c_int> {
-        let mut vec1: Vec<c_int> = vec![];
+        let mut watch_id: Vec<c_int> = vec![];
         if let Ok(item) = self.rx.try_recv() {
-            vec1.push(item);
+            watch_id.push(item);
         };
-        vec1
+        watch_id
     }
 }
 

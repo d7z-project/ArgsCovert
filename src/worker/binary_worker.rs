@@ -46,13 +46,13 @@ impl StableWorker {
             thread::sleep(Duration::from_millis(100));
         }
     }
-    pub(crate) fn stop(&self) {
+    pub fn stop(&self) {
         self.master_rx.send(KILL(SIGTERM)).unwrap();
     }
-    pub(crate) fn restart(&self) {
+    pub fn restart(&self) {
         self.master_rx.send(RESTART).unwrap();
     }
-    pub(crate) fn exit(&self) {
+    pub fn exit(&self) {
         self.master_rx.send(EXIT).unwrap();
     }
     pub fn start(&self) {
@@ -86,7 +86,70 @@ impl StableWorker {
         }
         let mut restart = false;
         debug_str("子进程开始启动.");
-
+        let before_hook = || -> bool {
+            if let Some(_) = &hooks.before_script {
+                debug_str("发现启动前钩子，开始执行脚本钩子.");
+                let before_path = before_script_path.to_str().unwrap().to_string();
+                if let Ok(data) = Command::new(&hooks.script_worker)
+                    .envs(&envs)
+                    .arg(&before_path)
+                    .output()
+                {
+                    info(format!(
+                        "前置钩子标准输出 - {} => \n {}",
+                        &before_path,
+                        String::from_utf8_lossy(&data.stdout).to_string()
+                    ));
+                    error(format!(
+                        "前置钩子错误输出 - {} => \n {}",
+                        &before_path,
+                        String::from_utf8_lossy(&data.stderr).to_string()
+                    ));
+                    if data.status.code().unwrap_or(-1) != 0 {
+                        {
+                            if let Ok(mut lock) = callback_action.lock() {
+                                *lock = EXITED(1);
+                            }
+                        }
+                        error_str("前置钩子执行失败，返回码不为 0");
+                        return false;
+                    } else {
+                        debug_str("前置钩子执行完成。");
+                    }
+                } else {
+                    {
+                        if let Ok(mut lock) = callback_action.lock() {
+                            *lock = EXITED(1);
+                        }
+                    }
+                    error(format!("前置钩子执行失败,内部流程出现问题"));
+                    return false;
+                }
+            }
+            true
+        };
+        let destroy_hook = || -> () {
+            if let Some(_) = &hooks.after_script {
+                debug_str("发现销毁钩子，开始执行脚本.");
+                let after_path = after_script_path.to_str().unwrap().to_string();
+                if let Ok(data) = Command::new(&hooks.script_worker)
+                    .envs(&envs)
+                    .arg(&after_path)
+                    .output()
+                {
+                    info(format!(
+                        "销毁钩子标准输出 - {} => \n {}",
+                        &after_path,
+                        String::from_utf8_lossy(&data.stdout).to_string()
+                    ));
+                    error(format!(
+                        "销毁钩子错误输出 - {} => \n {}",
+                        &after_path,
+                        String::from_utf8_lossy(&data.stderr).to_string()
+                    ));
+                }
+            }
+        };
         'e: loop {
             {
                 if let Ok(mut lock) = callback_action.lock() {
@@ -97,6 +160,9 @@ impl StableWorker {
                     }
                 }
             };
+            if before_hook().not() {
+                continue;
+            }
             if !restart {
                 debug_str("等待启动命令唤醒");
                 let action = nio_rx.recv().unwrap();
@@ -134,46 +200,6 @@ impl StableWorker {
                     Ok(())
                 });
             }
-
-            if let Some(_) = &hooks.before_script {
-                debug_str("发现启动前钩子，开始执行脚本钩子.");
-                let before_path = before_script_path.to_str().unwrap().to_string();
-                if let Ok(data) = Command::new(&hooks.script_worker)
-                    .envs(&envs)
-                    .arg(&before_path)
-                    .output()
-                {
-                    info(format!(
-                        "前置钩子标准输出 - {} => \n {}",
-                        &before_path,
-                        String::from_utf8_lossy(&data.stdout).to_string()
-                    ));
-                    error(format!(
-                        "前置钩子错误输出 - {} => \n {}",
-                        &before_path,
-                        String::from_utf8_lossy(&data.stderr).to_string()
-                    ));
-                    if data.status.code().unwrap_or(-1) != 0 {
-                        {
-                            if let Ok(mut lock) = callback_action.lock() {
-                                *lock = EXITED(1);
-                            }
-                        }
-                        error_str("前置钩子执行失败，返回码不为 0");
-                        continue;
-                    } else {
-                        debug_str("前置钩子执行完成。");
-                    }
-                } else {
-                    {
-                        if let Ok(mut lock) = callback_action.lock() {
-                            *lock = EXITED(1);
-                        }
-                    }
-                    error(format!("前置钩子执行失败,内部流程出现问题"));
-                    continue;
-                }
-            }
             let child_process = child_process.spawn();
             if let Err(e) = child_process {
                 {
@@ -210,6 +236,7 @@ impl StableWorker {
                     } else {
                         debug_str("程序正常退出");
                     }
+                    destroy_hook();
                     break;
                 }
                 trace_str("开始搜集响应日志.");
@@ -262,6 +289,7 @@ impl StableWorker {
                                 "程序收到停止指令，停止程序并等待下次唤醒,使用 {} 信号量.",
                                 i
                             ));
+                            destroy_hook();
                             wait_then_kill(&mut child_process, 90);
                             debug(format!("等待进程 {} 结束.", child_process.id()));
                             break 'l;
@@ -270,6 +298,7 @@ impl StableWorker {
                             unsafe {
                                 libc::kill(child_process.id() as i32, signals.exit);
                             }
+                            destroy_hook();
                             debug(format!(
                                 "程序收到重启指令，退出程序并重启,使用 {} 信号量.",
                                 signals.exit
@@ -282,6 +311,7 @@ impl StableWorker {
                             unsafe {
                                 libc::kill(child_process.id() as i32, signals.exit);
                             }
+                            destroy_hook();
                             debug(format!(
                                 "程序收到退出指令，退出程序,使用 {} 信号量.",
                                 signals.exit
@@ -299,26 +329,6 @@ impl StableWorker {
                 *lock = DESTROYED;
             }
             debug_str("执行器已被销毁，无法执行新的程序");
-        }
-        if let Some(_) = &hooks.after_script {
-            debug_str("发现销毁钩子，开始执行脚本.");
-            let after_path = after_script_path.to_str().unwrap().to_string();
-            if let Ok(data) = Command::new(&hooks.script_worker)
-                .envs(&envs)
-                .arg(&after_path)
-                .output()
-            {
-                info(format!(
-                    "销毁钩子标准输出 - {} => \n {}",
-                    &after_path,
-                    String::from_utf8_lossy(&data.stdout).to_string()
-                ));
-                error(format!(
-                    "销毁钩子错误输出 - {} => \n {}",
-                    &after_path,
-                    String::from_utf8_lossy(&data.stderr).to_string()
-                ));
-            }
         }
     }
     pub fn new(
