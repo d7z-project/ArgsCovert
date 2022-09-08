@@ -183,6 +183,13 @@ pub mod project_conf {
     }
 
     #[derive(Serialize, Deserialize, PartialEq, Debug, Copy, Clone)]
+    pub struct SoftSignals {
+        pub reload: i32,
+        pub exit: i32,
+        pub kill: i32,
+    }
+
+    #[derive(Serialize, Deserialize, PartialEq, Debug, Copy, Clone)]
     pub enum SourceKeyMode {
         ARG,
         ENV,
@@ -197,6 +204,9 @@ pub mod project_conf {
         pub after_script: String,
         pub check_health: HealthCheck,
         pub check_started: StartedCheck,
+        pub signals: SoftSignals,
+        pub restart_policy: RestartPolicy,
+
     }
 
     #[derive(Serialize, Deserialize, PartialEq, Debug)]
@@ -205,21 +215,25 @@ pub mod project_conf {
         pub delay: String,
         pub interval: String,
         pub failures: u16,
-        pub fail_step: CheckFailStep,
     }
 
 
-    #[derive(Serialize, Deserialize, PartialEq, Debug)]
-    pub enum CheckFailStep {
-        WAIT,
-        RESTART,
-        EXIT,
+    ///重启策略
+    #[derive(Serialize, Deserialize, PartialEq, Debug, Copy, Clone)]
+    pub enum RestartPolicy {
+        /// 不重启
+        NONE,
+        /// 总是重启
+        ALWAYS,
+        /// 失败重启
+        FAIL,
     }
 
     #[derive(Serialize, Deserialize, PartialEq, Debug)]
     pub struct StartedCheck {
         pub script: String,
         pub interval: String,
+        pub started_script: String,
     }
 }
 
@@ -250,7 +264,7 @@ pub mod soft_args {
     #[derive(Debug)]
     pub struct SoftArgs {
         pub config_path: String,
-        pub log_level:LoggerLevel,
+        pub log_level: LoggerLevel,
         pub variable: HashMap<String, String>,
     }
 
@@ -270,7 +284,7 @@ pub mod soft_args {
             attach.insert("user.home".to_string(), user_home.to_str().unwrap().to_string());
             attach.insert("app.dir".to_string(), env::current_exe().unwrap().parent().unwrap().to_str().unwrap().to_string());
             SoftArgs {
-                log_level:args.console_log_level,
+                log_level: args.console_log_level,
                 config_path: args.config_path,
                 variable: attach,
             }

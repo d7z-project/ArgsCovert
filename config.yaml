@@ -14,12 +14,20 @@ project:
     delay: 3s # 开始检测延时
     interval: 10s # 检查间隔
     failures: 5 # 视为失败的错误次数
-    fail_step: RESTART #  失败后动作 [WAIT,RESTART,EXIT]
   check_started: # 程序启动完成检查
     script: |
       exit 0
     # 程序启动检查脚本，如果返回值不为 0 则视为未启动完成
+    started_script: |
+      exit 0
+    # 程序启动完成钩子回调
     interval: 3s # 检查间隔
+  signals: # 重启信号量
+    reload: 1
+    exit: 15
+    kill: 9
+  restart_policy: ALWAYS
+
 args:
   - key: "ADDRESS" # 传入参数 key
     name: "地址" # 传入参数名称

@@ -12,7 +12,7 @@ use crate::utils::string;
 
 #[derive(Debug)]
 pub struct BinaryContext {
-    pub args: Vec<BinaryArg>,
+    pub args: Vec<String>,
     pub envs: HashMap<String, String>,
     pub before_script_path: PathBuf,
     pub after_script_path: PathBuf,
@@ -80,11 +80,22 @@ pub fn load_context(config: &ProjectConfig) -> Result<BinaryContext, SoftError> 
 
     let health_check_script_path = Path::new(env::temp_dir().as_path())
         .join(format!("{}-script-health-{:?}.sh", config.project.name, duration));
+    let mut out_envs: HashMap<String, String> = env::vars().collect();
+    let mut out_args: Vec<String> = vec![];
+    for x in args {
+        match x.mode {
+            SourceKeyMode::ARG => {
+                out_args.push(x.key);
+                out_args.push(x.value);
+            }
+            SourceKeyMode::ENV => { out_envs.insert(x.key, x.value); }
+        }
+    };
     Ok(BinaryContext {
-        args,
+        args: out_args,
         before_script_path,
         after_script_path,
-        envs: env::vars().collect(),
+        envs: out_envs,
         started_check_script_path,
         health_check_script_path,
     })

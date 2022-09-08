@@ -4,7 +4,8 @@ use crate::config::project_conf::{LoggerLevel, LogLevelId, ProjectConfig};
 use crate::config::project_conf::LoggerLevel::{DEBUG, ERROR, INFO, NONE, TRACE, WARN};
 use std::io::Write;
 use std::ops::Not;
-use std::path::{Path, PathBuf};
+use std::path::{PathBuf};
+use chrono::Local;
 
 struct LoggerInfo {
     pub console_level: LoggerLevel,
@@ -15,14 +16,18 @@ struct LoggerInfo {
 
 static mut LOG_INFO: Option<LoggerInfo> = None;
 
+pub fn debug_str(data: &str) {
+    _output(DEBUG, data);
+}
+
 pub fn debug(data: String) {
     _output(DEBUG, &data);
 }
 
 pub fn trace_str(data: &str) {
     _output(TRACE, data);
-
 }
+
 pub fn trace(data: String) {
     _output(TRACE, &data);
 }
@@ -50,19 +55,21 @@ pub fn error(data: String) {
 fn _output(level: LoggerLevel, message: &str) {
     let message = message.trim();
     unsafe {
+        let date = Local::now();
+        let time = date.format("%Y/%m/%d %H:%M:%S%.3f").to_string();
         if let Some(data) = &LOG_INFO {
             if data.console_level.id() <= level.id() {
                 if data.console_level.id() > WARN.id() {
-                    eprintln!("{:?} - {}", level, message);
+                    eprintln!("{} - {:?} - {}", time, level, message);
                 } else {
-                    println!("{:?} - {}", level, message);
+                    println!("{} - {:?} - {}", time, level, message);
                 }
             }
             if data.file_level.id() <= level.id() {
                 if level.id() >= WARN.id() {
-                    if let Err(_) = writeln!(&data.error_file_path, "{:?} - {}", level, message) {}
+                    if let Err(_) = writeln!(&data.error_file_path, "{} - {:?} - {}", time, level, message) {}
                 } else {
-                    if let Err(_) = writeln!(&data.file_path, "{:?} - {}", level, message) {}
+                    if let Err(_) = writeln!(&data.file_path, "{} - {:?} - {}", time, level, message) {}
                 }
             }
         }
