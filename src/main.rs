@@ -1,17 +1,16 @@
-use clap::Command;
-use std::cell::{Cell, RefCell};
+use std::cell::Cell;
 use std::ops::Not;
-use std::path::Path;
-use std::rc::Rc;
-use std::time::Duration;
-use std::{env, fs, thread};
 
-use libc::{SIGCONT, SIGHUP, SIGINT, SIGTERM, SIGTSTP, SIGUSR1, SIGWINCH};
+use std::thread;
+use std::time::Duration;
+
+use crate::args::soft_args::SoftArgs;
+use libc::{SIGHUP, SIGINT, SIGTERM};
 
 use crate::binary::args_builder::load_context;
+use crate::config::args;
 use crate::config::project_conf::load_info;
-use crate::config::project_conf::RestartPolicy::{FAIL, NONE};
-use crate::config::soft_args::SoftArgs;
+use crate::config::prop::RestartPolicy::{FAIL, NONE};
 use crate::log::{debug_str, error_str, info_str};
 use crate::utils::command::execute_script;
 use crate::utils::file::new_temp_path;
@@ -30,7 +29,7 @@ mod utils;
 mod worker;
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    log::info_str("项目已经启动.");
+    info_str("项目已经启动.");
     let args = SoftArgs::parse(); // 拉取参数
     let mut soft_config = load_info(&args.config_path, &args.variable)?; // 加载系统配置
     soft_config.log.console.level = args.log_level;

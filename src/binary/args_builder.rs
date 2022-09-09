@@ -1,4 +1,4 @@
-use crate::config::project_conf::{ProjectArgs, ProjectConfig, SourceKeyMode};
+use crate::config::prop::{ProjectArgs, ProjectConfig, SourceKeyMode};
 use crate::lib::SoftError;
 use crate::lib::SoftError::AppError;
 use crate::utils::log::warn;

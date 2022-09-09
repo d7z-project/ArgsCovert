@@ -1,0 +1,12 @@
+project:
+  name: covert # 项目名称
+  binary: test.sh # 可执行文件位置
+args:
+  - key: "ADDRESS" # 传入参数 key
+    name: "地址" # 传入参数名称
+    from: # 来源 key
+      - address
+      - ADDRESS
+    mode: ARG # 参数类型
+path: # 配置文件路径
+  - /etc/config

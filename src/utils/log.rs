@@ -1,5 +1,5 @@
-use crate::config::project_conf::LoggerLevel::{DEBUG, ERROR, INFO, NONE, TRACE, WARN};
-use crate::config::project_conf::{LogLevelId, LoggerLevel, ProjectConfig};
+use crate::config::prop::LoggerLevel::{DEBUG, ERROR, INFO, NONE, TRACE, WARN};
+use crate::config::prop::{LogLevelId, LoggerLevel, ProjectConfig};
 use chrono::Local;
 use std::fs::{File, OpenOptions};
 use std::io::Write;

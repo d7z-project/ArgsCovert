@@ -1,4 +1,4 @@
-use crate::config::project_conf::SoftSignals;
+use crate::config::prop::SoftSignals;
 use crate::log::{debug, debug_str, error, error_str, info, trace_str, warn};
 use crate::worker::binary_worker::CallbackAction::{CREATED, DESTROYED, EXITED, STARTED};
 use crate::worker::binary_worker::ChildThreadAction::{EXIT, KILL, RESTART, START};
