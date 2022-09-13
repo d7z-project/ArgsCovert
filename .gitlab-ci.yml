@@ -1,4 +1,8 @@
+stages:
+  - build
+  - release
 build:
+  stage: build
   image: devel/rust:el7
   before_script:
     - wget https://s3.power-cloud.com/static-obj/offline-file/args_covert_rust_vendor.tgz -O offline.tgz
@@ -23,6 +27,7 @@ build:
     paths:
       -  release.tgz
 release:
+  stage: release
   dependencies:
     - build
   image: tools/minio-client:latest
