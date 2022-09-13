@@ -124,30 +124,62 @@ fn get_then_check_arg(
     vars: &HashMap<String, String>,
 ) -> Result<Option<BinaryArg>, SoftError> {
     let regex_str = args.valid_regex.trim();
-    let regex = Regex::new(regex_str).map_err(|e| AppError(e.to_string()))?;
-    for x in &args.from {
-        if let Some(data) = vars.get(x) {
-            if regex_str.is_empty().not() {
-                // 带正则判断
-                if regex.is_match(data).not() {
-                    eprintln!(
-                        "注意：传入参数 \"{}\" 对应的值 \"{}\" 校验失败.",
-                        x.to_string(),
-                        data
-                    );
-                    continue;
-                }
-            }
-            return Ok(Some(BinaryArg {
-                key: args.key.to_string(),
-                value: data.to_string(),
-                mode: args.mode,
-            }));
+    let alias_vars: HashMap<String, String> = args
+        .source_alias
+        .iter()
+        .map(|e| (&e.target, e.over, vars.get(&e.source)))
+        .filter(|e| e.2.is_some() && (vars.contains_key(e.0).not() || e.1))
+        .map(|e| (e.0.to_string(), e.2.unwrap().to_string()))
+        .collect();
+    let dist_value_regex = Regex::new(regex_str).map_err(|e| AppError(e.to_string()))?;
+    let variable_regex = Regex::new("\\{\\{\\w.*?}}").unwrap();
+    let get_envs_value = |key: &str| -> Option<&String> {
+        let key = key.replace("{{", "").replace("}}", "");
+        vars.get(&key).or(alias_vars.get(&key))
+    };
+    for arg_format in &args.from {
+        // 获取单个判断
+        let variables: HashMap<String, Option<String>> = variable_regex
+            .find_iter(arg_format)
+            .map(|e| arg_format[e.start()..e.end()].to_string())
+            .map(|e| (e.to_string(), get_envs_value(&e).map(|v| v.to_string())))
+            .collect();
+        let not_found_var: Vec<String> = variables
+            .iter()
+            .filter(|e| e.1.is_none())
+            .map(|e| e.0.to_string())
+            .collect();
+        if not_found_var.is_empty().not() {
+            warn(format!(
+                "参数 '{}' 有 '{:?}' 变量未找到,跳过此配置",
+                arg_format, not_found_var
+            ));
+            continue;
         }
+        let variables: HashMap<String, String> = variables
+            .iter()
+            .filter(|e| e.1.is_some())
+            .map(|e| (e.0.to_string(), e.1.to_owned().unwrap()))
+            .collect();
+        let mut filled_arg_format = arg_format.clone();
+        string::replace_all_str_from_map(&mut filled_arg_format, &variables);
+        if dist_value_regex.is_match(&filled_arg_format).not() {
+            let message = args
+                .valid_message
+                .replace("{{message.value}}", &filled_arg_format)
+                .replace("{{message.key}}", arg_format);
+            warn(message);
+            continue;
+        }
+        return Ok(Some(BinaryArg {
+            key: args.key.to_string(),
+            value: filled_arg_format.to_string(),
+            mode: args.mode,
+        }));
     }
     if args.must {
         return Err(AppError(
-            format!("未指定参数 \"{}\" 的值，项目无法启动.", args.key).to_string(),
+            format!("未找到配置参数 '{}' 的值，项目无法启动.", args.key).to_string(),
         ));
     }
     return Ok(None);
@@ -175,17 +207,17 @@ fn load_form_local(
 }
 
 fn load_yaml(
-    container: &mut HashMap<String, String>,
-    data: String,
-    cover: bool,
+    _container: &mut HashMap<String, String>,
+    _data: String,
+    _cover: bool,
 ) -> Result<(), SoftError> {
     Err(AppError("暂未实现加载 YAML".to_string()))
 }
 
 fn load_form_remote(
-    container: &mut HashMap<String, String>,
-    config_path: &String,
-    cover: bool,
+    _container: &mut HashMap<String, String>,
+    _config_path: &String,
+    _cover: bool,
 ) -> Result<(), SoftError> {
     Err(AppError("暂未实现加载网络配置".to_string()))
 }

@@ -144,9 +144,23 @@ impl LogLevelId for LoggerLevel {
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
+pub struct SourceAlias {
+    pub source: String,
+    pub target: String,
+    #[serde(default = "def_over")]
+    pub over: bool,
+}
+
+fn def_over() -> bool {
+    true
+}
+
+#[derive(Serialize, Deserialize, PartialEq, Debug)]
 pub struct ProjectArgs {
     pub name: String,
     pub key: String,
+    #[serde(default = "def_alias")]
+    pub source_alias: Vec<SourceAlias>,
     pub from: Vec<String>,
     #[serde(default = "def_mode")]
     pub mode: SourceKeyMode,
@@ -154,8 +168,16 @@ pub struct ProjectArgs {
     pub must: bool,
     #[serde(default = "empty_str")]
     pub valid_regex: String,
-    #[serde(default = "empty_str")]
+    #[serde(default = "error_message")]
     pub valid_message: String,
+}
+
+fn error_message() -> String {
+    "参数 '{{key}}' 的值 '{{value}}'校验失败。".to_string()
+}
+
+fn def_alias() -> Vec<SourceAlias> {
+    vec![]
 }
 
 fn def_mode() -> SourceKeyMode {
