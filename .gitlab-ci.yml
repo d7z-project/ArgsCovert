@@ -1,4 +1,4 @@
-args_cover:build:
+build:
   image: devel/rust:el7
   before_script:
     - wget https://s3.power-cloud.com/static-obj/offline-file/args_covert_rust_vendor.tgz -O offline.tgz
@@ -17,6 +17,8 @@ args_cover:build:
   after_script:
     - strip -s target/release/args_covert
     - upx -9 target/release/args_covert
+    - cp target/release/args_covert args-tools
+    - tar zcf release.tgz args-tools
   artifacts:
     paths:
-      -  target/release/args_covert
+      -  release.tgz
