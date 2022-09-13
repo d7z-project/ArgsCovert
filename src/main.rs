@@ -54,8 +54,8 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         &soft_config.project.signals,
         HookScripts {
             script_worker: soft_config.project.script_worker.clone(),
-            before_script: Some(soft_config.project.before_script),
-            after_script: Some(soft_config.project.after_script),
+            before_script: Some(soft_config.project.before_script).filter(|e| e.is_empty().not()),
+            after_script: Some(soft_config.project.after_script).filter(|e| e.is_empty().not()),
         },
     ); // 主要进程工作区
 

@@ -249,7 +249,7 @@ impl StableWorker {
                     .trim()
                     .to_string();
                 if s_out.is_empty().not() {
-                    info(format!("Child Process STDOUT:\n{}", s_out));
+                    info(format!("子进程标准输出:\n{}", s_out));
                 }
                 buffer.clear();
                 trace_str("抓取错误日志.");
@@ -258,7 +258,7 @@ impl StableWorker {
                     .trim()
                     .to_string();
                 if s_err.is_empty().not() {
-                    error(format!("Child Process STDERR:\n{}", s_err));
+                    error(format!("子进程错误输出:\n{}", s_err));
                 }
                 buffer.clear();
                 trace_str("抓取日志完成.");
