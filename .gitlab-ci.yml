@@ -22,3 +22,11 @@ build:
   artifacts:
     paths:
       -  release.tgz
+release:
+  dependencies:
+    - build
+  image: tools/minio-client:latest
+  before_script:
+    - mc config host add minio $S3_URL $S3_ACCESS_KEY $S3_SECRET_KEY  --api s3v4
+  script:
+    - mc cp release.tgz minio/cloud-monitor/
