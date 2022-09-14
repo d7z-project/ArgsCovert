@@ -129,7 +129,7 @@ impl StableWorker {
                     for x in Some(String::from_utf8_lossy(&data.stderr).to_string())
                         .filter(|e| e.trim().is_empty().not())
                     {
-                        error(format!("前置钩子错误输出 - {} => \n {}", &before_path, x));
+                        warn(format!("前置钩子错误输出 - {} => \n {}", &before_path, x));
                     }
 
                     if data.status.code().unwrap_or(-1) != 0 {
@@ -172,7 +172,7 @@ impl StableWorker {
                     for x in Some(String::from_utf8_lossy(&data.stderr).to_string())
                         .filter(|e| e.trim().is_empty().not())
                     {
-                        error(format!("销毁钩子错误输出 - {} => \n {}", &after_path, x));
+                        warn(format!("销毁钩子错误输出 - {} => \n {}", &after_path, x));
                     }
                 }
             }
@@ -284,7 +284,7 @@ impl StableWorker {
                     .trim()
                     .to_string();
                 if s_err.is_empty().not() {
-                    error(format!("子进程错误输出:\n{}", s_err));
+                    warn(format!("子进程错误输出:\n{}", s_err));
                 }
                 buffer.clear();
                 trace_str("抓取日志完成.");

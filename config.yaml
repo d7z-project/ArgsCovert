@@ -5,6 +5,8 @@ project:
   before_script: |
     echo hello
     echo "{{--address}}"
+    echo "{{var.redis.port}}"
+    echo "{{redis.port}}"
     exit 0
   # 启动前脚本，可用于前置检查，如果脚本异常退出则视为此次启动失败
   after_script: |

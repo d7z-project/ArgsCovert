@@ -77,10 +77,25 @@ pub fn load_context(config: &ProjectConfig) -> Result<BinaryContext, SoftError> 
             warn(format!("无法从'{}'位置加载配置，因为{}.", &conf, e))
         }
     }
-    for env_item in env::vars() {
-        args_container.insert(env_item.0, env_item.1);
-    } // 装入环境变量，覆盖从文件读取的信息
-
+    //将配置文件内容与环境变量内容拆分
+    let var_clone: HashMap<String, String> = args_container
+        .iter()
+        .map(|(key, value)| (format!("var.{}", key), value.to_string()))
+        .collect();
+    for (key, value) in var_clone {
+        args_container.insert(key, value);
+    }
+    // 装入环境变量，覆盖从文件读取的信息
+    for (key, value) in env::vars() {
+        args_container.insert(key, value);
+    }
+    //将配置文件内容与环境变量内容拆分
+    let env_clone: HashMap<String, String> = env::vars()
+        .map(|(key, value)| (format!("env.{}", key), value.to_string()))
+        .collect();
+    for (key, value) in env_clone {
+        args_container.insert(key, value);
+    }
     // 添加附加的变量
     for alias in &config.config_alias {
         let data = alias
@@ -92,7 +107,7 @@ pub fn load_context(config: &ProjectConfig) -> Result<BinaryContext, SoftError> 
         if let Some(data) = data {
             let key = alias.key.to_owned();
             if alias.over || args_container.contains_key(&key).not() {
-                debug(format!("配置{} 已填充 {} 内容", &key, &data));
+                debug(format!("配置 '{}' 已填充 '{}' 内容", &key, &data));
                 args_container.insert(key, data);
             }
         } else {
@@ -116,6 +131,7 @@ pub fn load_context(config: &ProjectConfig) -> Result<BinaryContext, SoftError> 
     let mut out_envs: HashMap<String, String> = env::vars().collect();
     let mut out_args: Vec<String> = vec![];
     let mut script_vars: HashMap<String, String> = attrs.clone();
+
     for x in args {
         script_vars.insert(
             var_replace.replace("item", &x.key).to_string(),
@@ -130,6 +146,9 @@ pub fn load_context(config: &ProjectConfig) -> Result<BinaryContext, SoftError> 
                 out_envs.insert(x.key, x.value);
             }
         }
+    }
+    for (k, v) in args_container {
+        script_vars.insert(var_replace.replace("item", &k).to_string(), v);
     }
     Ok(BinaryContext {
         args: out_args,
