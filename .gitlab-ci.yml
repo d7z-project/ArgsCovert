@@ -5,7 +5,7 @@ build:
   stage: build
   image: devel/rust:el7
   before_script:
-    - wget https://$S3_URL/static-obj/offline-file/args_covert_rust_vendor.tgz -O offline.tgz
+    - wget $S3_URL/static-obj/offline-file/args_covert_rust_vendor.tgz -O offline.tgz
     - tar zxf offline.tgz
     - |
       mkdir .cargo
