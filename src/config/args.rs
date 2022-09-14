@@ -1,24 +1,29 @@
 pub mod soft_args {
-    use crate::config::prop::LoggerLevel;
-    use crate::log_default;
-    use clap::Parser;
     use std::collections::HashMap;
     use std::env;
     use std::path::PathBuf;
 
-    /// Easy Application Args covert.
+    use clap::Parser;
+
+    use crate::config::prop::LoggerLevel;
+    use crate::log_default;
+
     #[derive(Parser, Debug)]
-    #[clap(author, version, about, long_about = None)]
+    #[clap(author, version, about = Some(about()))]
     pub struct SoftStaticArgs {
-        /// config path
+        /// 指定配置文件位置
         #[clap(short, long = "--config", default_value_t = String::from("application.yaml"))]
         pub config_path: String,
-        /// add variable
+        /// 添加内部替换的变量
         #[clap(short = 'a', long = "--attach")]
         pub variable: Option<Vec<String>>,
-        /// logger level
+        /// 配置控制台输出的日志级别
         #[clap(short = 'l', long = "--level", default_value_t = LoggerLevel::INFO)]
         pub console_log_level: LoggerLevel,
+    }
+
+    fn about() -> &'static str {
+        include_str!("about.txt")
     }
 
     #[derive(Debug)]

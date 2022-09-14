@@ -2,7 +2,7 @@
 name = "args_covert"
 version = "1.0.0"
 edition = "2021"
-description = "Config Properties Cover"
+homepage = "https://github.com/d7z-project/ArgsCovert"
 license = "MIT"
 
 [dependencies]

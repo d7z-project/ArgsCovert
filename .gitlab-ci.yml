@@ -21,7 +21,9 @@ build:
   after_script:
     - strip -s target/release/args_covert
     - upx -9 target/release/args_covert
-    - cp target/release/args_covert args-tools
+    - mkdir args-tools
+    - cp target/release/args_covert args-tools/args-tools
+    - cp LICENSE args-tools/
     - tar zcf release.tgz args-tools
   artifacts:
     paths:
