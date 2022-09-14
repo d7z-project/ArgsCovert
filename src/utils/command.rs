@@ -26,8 +26,6 @@ use std::ops::Not;
 use std::process::Command;
 
 use crate::lib::SoftError;
-use crate::log::error;
-use crate::utils::string::not_blank_then;
 use crate::{log, new_temp_path};
 
 pub fn execute_script(

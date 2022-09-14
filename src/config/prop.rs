@@ -43,6 +43,12 @@ pub struct ProjectConfig {
     pub log: ProjectLog,
     #[serde(default = "default_map")]
     pub attach: HashMap<String, String>,
+    #[serde(default = "default_alias")]
+    pub config_alias: Vec<ProjectConfigAlias>,
+}
+
+fn default_alias() -> Vec<ProjectConfigAlias> {
+    vec![]
 }
 
 fn def_log() -> ProjectLog {
@@ -59,6 +65,14 @@ fn default_vec() -> Vec<String> {
 
 fn default_map() -> HashMap<String, String> {
     HashMap::new()
+}
+
+#[derive(Serialize, Deserialize, PartialEq, Debug)]
+pub struct ProjectConfigAlias {
+    pub key: String,
+    pub expr: Vec<String>,
+    #[serde(default = "def_over")]
+    pub over: bool,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
@@ -168,25 +182,14 @@ impl LogLevelId for LoggerLevel {
     }
 }
 
-#[derive(Serialize, Deserialize, PartialEq, Debug)]
-pub struct SourceAlias {
-    pub source: String,
-    pub target: String,
-    #[serde(default = "def_over")]
-    pub over: bool,
-}
-
 fn def_over() -> bool {
     true
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
 pub struct ProjectArgs {
-    pub name: String,
     pub key: String,
-    #[serde(default = "def_alias")]
-    pub source_alias: Vec<SourceAlias>,
-    pub from: Vec<String>,
+    pub expr: Vec<String>,
     #[serde(default = "def_mode")]
     pub mode: SourceKeyMode,
     #[serde(default = "def_false")]
@@ -199,10 +202,6 @@ pub struct ProjectArgs {
 
 fn error_message() -> String {
     "参数 '{{key}}' 的值 '{{value}}'校验失败。".to_string()
-}
-
-fn def_alias() -> Vec<SourceAlias> {
-    vec![]
 }
 
 fn def_mode() -> SourceKeyMode {

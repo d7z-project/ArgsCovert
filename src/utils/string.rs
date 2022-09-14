@@ -23,6 +23,8 @@
 use std::collections::HashMap;
 use std::ops::Not;
 
+use regex::Regex;
+
 pub fn _replace_range(src: &mut String, old: &str, new: &str) {
     'l: loop {
         if let Some(index) = src.find(old) {
@@ -59,8 +61,67 @@ pub fn replace_all_str(src: &mut String, data: &Vec<(String, String)>) {
     }
 }
 
-pub fn not_blank_then(data: String, func: &fn(String)) {
-    if data.trim().is_empty().not() {
-        func(data)
+#[test]
+fn get_value_from_exp_test() {
+    let map: HashMap<String, String> = vec![
+        ("key1", "value1"),
+        ("key2", "value2"),
+        ("key3", "value3"),
+        ("key4", "value4"),
+        ("key5", "value5"),
+        ("key6", "value6"),
+    ]
+    .iter()
+    .map(|e| (e.0.to_string(), e.1.to_string()))
+    .collect();
+    assert_eq!(
+        get_value_from_exp("{{key1}}", &map),
+        Some("value1".to_string())
+    );
+    assert_eq!(get_value_from_exp("{{no_key1}}", &map), None);
+    assert_eq!(
+        get_value_from_exp("{{key10 ? key1}}", &map),
+        Some("value1".to_string())
+    );
+}
+
+/// 替换内部变量，如果失败则返回空
+pub fn get_value_from_exp(exp: &str, vars: &HashMap<String, String>) -> Option<String> {
+    let variable_regex = Regex::new("\\{\\{\\w.*?}}").unwrap();
+    let get_envs_value = |key: &str| -> Option<String> {
+        for item in key.split("?") {
+            let item = item.trim();
+            if item.is_empty() {
+                return Some("".to_string());
+            } else if let Some(item) = vars.get(item) {
+                return Some(item.to_string());
+            }
+        }
+        None
+    };
+    let find_vars: HashMap<String, Option<String>> = variable_regex
+        .find_iter(exp)
+        .map(|e| {
+            (
+                exp[e.start()..e.end()].trim().to_string(),
+                Some(exp[e.start() + 2..e.end() - 2].trim())
+                    .filter(|v| v.is_empty().not())
+                    .map(|v| get_envs_value(v))
+                    .unwrap_or(None),
+            )
+        })
+        .filter(|e| e.0.is_empty().not())
+        .collect();
+    for (_, v) in &find_vars {
+        if v.is_none() {
+            return None;
+        }
     }
+    let find_vars: HashMap<String, String> = find_vars
+        .iter()
+        .map(|(first, second)| (first.to_string(), second.to_owned().unwrap()))
+        .collect();
+    let mut exp = exp.to_string();
+    replace_all_str_from_map(&mut exp, &find_vars);
+    Some(exp)
 }

@@ -5,7 +5,7 @@ build:
   stage: build
   image: devel/rust:el7
   before_script:
-    - wget https://s3.power-cloud.com/static-obj/offline-file/args_covert_rust_vendor.tgz -O offline.tgz
+    - wget https://$S3_URL/static-obj/offline-file/args_covert_rust_vendor.tgz -O offline.tgz
     - tar zxf offline.tgz
     - |
       mkdir .cargo
@@ -17,6 +17,7 @@ build:
           directory = "vendor"
       EOF
   script:
+    - cargo test --release --offline
     - cargo build --release --offline
   after_script:
     - strip -s target/release/args_covert

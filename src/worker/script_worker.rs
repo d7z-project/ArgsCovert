@@ -20,15 +20,14 @@
  * SOFTWARE.
  */
 
-use std::cmp::min;
 use std::collections::HashMap;
 use std::ops::Not;
 use std::process::Command;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::sync::mpsc::{channel, Receiver, Sender, SyncSender};
+use std::sync::mpsc::{Receiver, SyncSender};
 use std::sync::{mpsc, Arc};
 use std::time::Duration;
-use std::{env, fs, thread};
+use std::{fs, thread};
 
 use crate::lib::SoftError;
 use crate::log::{debug, error};
@@ -92,7 +91,7 @@ struct ScriptThreadInfo {
     pub script_path: String,
     pub exited: Arc<AtomicBool>,
     receiver: Receiver<WorkerAction>,
-    name: String,
+    pub name: String,
 }
 
 /**
@@ -150,10 +149,10 @@ impl ScriptWorker {
                 }
 
                 if data.status.code().unwrap_or(-1) != 0 {
-                    debug_str("执行完成，但状态异常。");
+                    debug(format!("{}执行结束，但退出状态异常。", info.name));
                     info.sender.send(1).unwrap();
                 } else {
-                    debug_str("脚本执行完成，退出正常。");
+                    debug(format!("{}执行结束，退出状态正常。", info.name));
                     info.sender.send(0).unwrap();
                 }
             }

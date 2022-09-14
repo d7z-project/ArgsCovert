@@ -52,23 +52,23 @@ pub mod project_conf {
         let path = canonicalize(Path::new(config_path)).map_err(|_| {
             SoftError::AppError(format!("配置文件 {} 不存在.", config_path).to_string())
         })?;
-        let path = path.as_path();
-        if path.is_file().not() {
+        let _config_path = path.as_path();
+        if _config_path.is_file().not() {
             return Err(SoftError::AppError(
                 format!("配置文件 {} 不存在.", config_path).to_string(),
             ));
         };
-        let mut data = fs::read_to_string(path)?;
+        let mut config_data_str = fs::read_to_string(_config_path)?;
         let _static_var = String::from("{{item}}");
         utils::string::replace_all_str(
-            &mut data,
+            &mut config_data_str,
             &attrs
                 .iter()
                 .map(|e| (_static_var.replace("item", e.0), e.1.to_string()))
                 .collect(),
         );
 
-        let mut result: ProjectConfig = serde_yaml::from_str(&data)
+        let mut result: ProjectConfig = serde_yaml::from_str(&config_data_str)
             .map_err(|e| IOError::new(ErrorKind::Other, e.to_string()))?;
         result.attach.iter().for_each(|it| {
             (&mut attrs)
@@ -80,7 +80,9 @@ pub mod project_conf {
             PathBuf::from_str(&result.project.binary)?,
             PathBuf::from(format!(
                 "{}{}",
-                canonicalize(path.parent().unwrap())?.to_str().unwrap(),
+                canonicalize(_config_path.parent().unwrap())?
+                    .to_str()
+                    .unwrap(),
                 &result.project.binary
             )),
             PathBuf::from(format!(
@@ -110,16 +112,16 @@ pub mod project_conf {
             ));
         }
         result.attach = attrs.clone();
-        data = serde_yaml::to_string(&result).unwrap();
+        config_data_str = serde_yaml::to_string(&result).unwrap();
         utils::string::replace_all_str(
-            &mut data,
+            &mut config_data_str,
             &result
                 .attach
                 .iter()
                 .map(|e| (_static_var.replace("item", e.0), e.1.to_string()))
                 .collect(),
         );
-        let result: ProjectConfig = serde_yaml::from_str(&data)
+        let result: ProjectConfig = serde_yaml::from_str(&config_data_str)
             .map_err(|e| IOError::new(ErrorKind::Other, e.to_string()))?;
         Ok(result)
     }
