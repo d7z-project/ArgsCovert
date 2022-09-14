@@ -74,7 +74,7 @@ pub fn load_context(config: &ProjectConfig) -> Result<BinaryContext, SoftError> 
             load_form_local(&mut args_container, &format!("file://{}", conf), false)
         };
         if let Err(e) = res {
-            warn(format!("无法从 \"{}\" 位置加载配置，因为{}.", &conf, e))
+            warn(format!("无法从'{}'位置加载配置，因为{}.", &conf, e))
         }
     }
     for env_item in env::vars() {
@@ -222,11 +222,9 @@ fn load_properties(
         .map(|e| -> Vec<&str> { e.splitn(2, "=").collect() })
         .filter(|e| e.len() == 2)
         .map(|e| (e[0].to_string(), e[1].to_string()))
-        .for_each(|e| {
-            if cover {
-                container.insert(e.0, e.1);
-            } else {
-                container.entry(e.0).or_insert(e.1);
+        .for_each(|(key, value)| {
+            if cover || container.contains_key(&key).not() {
+                container.insert(key, value);
             }
         });
     Ok(())
