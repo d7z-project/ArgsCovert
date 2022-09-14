@@ -20,7 +20,6 @@
  * SOFTWARE.
  */
 
-use std::fs;
 use std::fs::{File, OpenOptions};
 use std::io::Write;
 use std::ops::Not;
@@ -117,37 +116,41 @@ pub fn log_default(level: LoggerLevel) {
 }
 
 pub fn log_init(soft_config: &ProjectConfig) {
-    let file_path = &PathBuf::from(&soft_config.log.file.path);
-    let error_file_path = &PathBuf::from(&soft_config.log.file.error_path);
-    if (soft_config.log.file.append).not() {
-        if file_path.is_file() {
-            fs::remove_file(file_path).expect("日志文件无法写入！");
-        }
-        if error_file_path.is_file() {
-            fs::remove_file(error_file_path).expect("日志文件无法写入！");
-        }
-    }
+    let file_path = Some(&soft_config.log.file.path)
+        .filter(|e| e.is_empty().not())
+        .map(|e| PathBuf::from(e));
+    let error_file_path = Some(&soft_config.log.file.error_path)
+        .filter(|e| e.is_empty().not())
+        .map(|e| PathBuf::from(e));
+
     if soft_config.log.file.level == NONE {}
-    let file_path = Some(file_path)
+    let file_path = file_path
         .filter(|_| soft_config.log.file.level == NONE)
         .map(|e| {
             OpenOptions::new()
                 .create(true)
                 .write(true)
-                .append(true) // This is needed to append to file
+                .append(soft_config.log.file.append) // This is needed to append to file
                 .open(e)
-                .expect("日志文件权限问题，请处理日志权限")
-        });
-    let error_path = Some(error_file_path)
+                .ok()
+        })
+        .filter(|e| e.is_some())
+        .map(|e| e.unwrap());
+    let error_path = error_file_path
         .filter(|_| soft_config.log.file.level.id() < WARN.id())
         .map(|e| {
             OpenOptions::new()
                 .create(true)
                 .write(true)
-                .append(true) // This is needed to append to file
+                .append(soft_config.log.file.append) // This is needed to append to file
                 .open(e)
-                .expect("日志文件权限问题，请处理日志权限")
-        });
+                .ok()
+        })
+        .filter(|e| e.is_some())
+        .map(|e| e.unwrap());
+    if file_path.is_none() || file_path.is_none() {
+        eprintln!("无法写入标准/错误日志，请配置日志写入位置，如已配置，请检查日志文件权限.")
+    }
 
     unsafe {
         LOG_INFO = Some(LoggerInfo {
