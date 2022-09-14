@@ -46,6 +46,7 @@ pub struct StableWorker {
 #[derive(PartialEq)]
 pub enum ChildThreadAction {
     START,
+    #[allow(dead_code)]
     KILL(i32),
     EXIT,
     RESTART,
@@ -70,6 +71,7 @@ impl StableWorker {
             thread::sleep(Duration::from_millis(100));
         }
     }
+    #[allow(dead_code)]
     pub fn stop(&self) {
         self.master_rx.send(KILL(SIGTERM)).unwrap();
     }

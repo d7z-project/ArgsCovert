@@ -25,7 +25,6 @@ pub mod prop;
 
 pub mod project_conf {
     use std::collections::HashMap;
-    use std::fmt::{Display, Formatter};
     use std::fs::canonicalize;
     use std::io::{Error as IOError, ErrorKind};
     use std::ops::Not;
@@ -34,8 +33,6 @@ pub mod project_conf {
     use std::{env, fs};
 
     use is_executable::IsExecutable;
-    use libc::{SIGHUP, SIGKILL, SIGTERM};
-    use serde::{Deserialize, Serialize};
 
     use crate::config::prop::ProjectConfig;
     use crate::lib::SoftError;

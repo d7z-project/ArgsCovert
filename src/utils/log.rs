@@ -20,11 +20,11 @@
  * SOFTWARE.
  */
 
+use std::fs;
 use std::fs::{File, OpenOptions};
 use std::io::Write;
 use std::ops::Not;
 use std::path::PathBuf;
-use std::{env, fs};
 
 use chrono::Local;
 
@@ -52,6 +52,7 @@ pub fn trace_str(data: &str) {
     _output(TRACE, data);
 }
 
+#[allow(dead_code)]
 pub fn trace(data: String) {
     _output(TRACE, &data);
 }

@@ -30,7 +30,7 @@ use regex::Regex;
 use crate::config::prop::{ProjectArgs, ProjectConfig, SourceKeyMode};
 use crate::lib::SoftError;
 use crate::lib::SoftError::AppError;
-use crate::log::{debug, info};
+use crate::log::debug;
 use crate::utils::log::warn;
 use crate::utils::string;
 
