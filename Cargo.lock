@@ -21,7 +21,7 @@ dependencies = [
 ]
 
 [[package]]
-name = "args_covert"
+name = "args-tools"
 version = "1.0.0"
 dependencies = [
  "chrono",

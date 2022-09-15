@@ -1,5 +1,5 @@
 [package]
-name = "args_covert"
+name = "args-tools"
 version = "1.0.0"
 edition = "2021"
 homepage = "https://github.com/d7z-project/ArgsCovert"

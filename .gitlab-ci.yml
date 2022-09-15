@@ -1,11 +1,11 @@
 stages:
   - build
   - release
-args_covert:build:
+args-tools:build:
   stage: build
   image: devel/rust:el7
   before_script:
-    - wget $S3_URL/static-obj/offline-file/args_covert_rust_vendor.tgz -O offline.tgz
+    - wget $S3_URL/object-static/offline/args-tools-rust-offline.tgz -O offline.tgz
     - tar zxf offline.tgz
     - |
       mkdir .cargo
@@ -21,34 +21,34 @@ args_covert:build:
     - cargo build --offline
     - cargo build --release --offline
   after_script:
-    - strip -s target/release/args_covert
-    - upx -9 target/release/args_covert
+    - strip -s target/release/args-tools
+    - upx -9 target/release/args-tools
     - mkdir args-tools
-    - cp target/release/args_covert args-tools/args-tools
+    - cp target/release/args-tools args-tools/args-tools
     - cp LICENSE args-tools/
     - tar zcf release.tgz args-tools
     - rm args-tools/args-tools
-    - cp target/debug/args_covert args-tools/args-tools
+    - cp target/debug/args-tools args-tools/args-tools
     - tar zcf debug.tgz args-tools
   artifacts:
     paths:
       - release.tgz
       - debug.tgz
-args_covert:release:
+args-tools:release:
   variables:
-    PUSH_PATH: /object-release/gitlab/cloud-monitor/args-tools
+    PUSH_PATH: /object-release/gitlab/args-tools
   stage: release
   dependencies:
-    - build
+    - args-tools:build
   image: tools/minio-client:latest
   before_script:
-    - mc config host add minio $S3_URL $S3_ACCESS_KEY $S3_SECRET_KEY  --api s3v4
+    - mc config host add minio $S3_URL $S3_ACCESS_KEY $S3_SECRET_KEY --api s3v4
   script:
     - |
-      mc cp debug.tgz "minio/${PUSH_PATH}/args-tools-debug-latest-el7.tgz"
-      mc cp debug.tgz "minio/${PUSH_PATH}/debug/args-tools-${CI_COMMIT_SHORT_SHA}-el7.tgz"
+      mc cp debug.tgz "minio/${PUSH_PATH}/args-tools-dev.linux-amd64.tar.gz"
+      mc cp debug.tgz "minio/${PUSH_PATH}/dev/args-tools-${CI_COMMIT_SHORT_SHA}.linux-amd64.tar.gz"
     - |
       if [  $CI_DEFAULT_BRANCH == $CI_COMMIT_BRANCH ]; do
-        mc cp release.tgz "minio/${PUSH_PATH}/args-tools-release-latest-el7.tgz"
-        mc cp release.tgz "minio/${PUSH_PATH}/release/args-tools-${CI_COMMIT_SHORT_SHA}-el7.tgz"
+        mc cp release.tgz "minio/${PUSH_PATH}/args-tools-prod.linux-amd64.tar.gz"
+        mc cp release.tgz "minio/${PUSH_PATH}/prod/args-tools-${CI_COMMIT_SHORT_SHA}.linux-amd64.tar.gz"
       done

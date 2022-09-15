@@ -27,7 +27,7 @@ use std::str::FromStr;
 use libc::{SIGHUP, SIGKILL, SIGTERM};
 use serde::{Deserialize, Serialize};
 
-use args_covert::SoftError;
+use args_tools::SoftError;
 
 use crate::config::prop::RestartPolicy::ALWAYS;
 use crate::config::prop::SourceKeyMode::ARG;
