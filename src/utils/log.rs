@@ -20,6 +20,7 @@
  * SOFTWARE.
  */
 
+use std::fs;
 use std::fs::{File, OpenOptions};
 use std::io::Write;
 use std::ops::Not;
@@ -123,14 +124,25 @@ pub fn log_init(soft_config: &ProjectConfig) {
         .filter(|e| e.is_empty().not())
         .map(|e| PathBuf::from(e));
 
-    if soft_config.log.file.level == NONE {}
+    for x in &file_path {
+        if soft_config.log.file.append.not() && x.is_file() {
+            fs::remove_file(x).ok();
+        }
+    }
+
+    for x in &error_file_path {
+        if soft_config.log.file.append.not() && x.is_file() {
+            fs::remove_file(x).ok();
+        }
+    }
+
     let file_path = file_path
-        .filter(|_| soft_config.log.file.level == NONE)
+        .filter(|_| soft_config.log.file.level != NONE)
         .map(|e| {
             OpenOptions::new()
                 .create(true)
+                .append(true) // This is needed to append to file
                 .write(true)
-                .append(soft_config.log.file.append) // This is needed to append to file
                 .open(e)
                 .ok()
         })
@@ -142,7 +154,7 @@ pub fn log_init(soft_config: &ProjectConfig) {
             OpenOptions::new()
                 .create(true)
                 .write(true)
-                .append(soft_config.log.file.append) // This is needed to append to file
+                .append(true) // This is needed to append to file
                 .open(e)
                 .ok()
         })

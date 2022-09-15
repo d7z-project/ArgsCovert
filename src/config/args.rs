@@ -23,6 +23,7 @@
 pub mod soft_args {
     use std::collections::HashMap;
     use std::env;
+    use std::ops::Not;
     use std::path::PathBuf;
 
     use clap::Parser;
@@ -38,7 +39,7 @@ pub mod soft_args {
         pub config_path: String,
         /// 添加内部替换的变量
         #[clap(short = 'a', long = "--attach")]
-        pub variable: Option<Vec<String>>,
+        pub variable: Vec<String>,
         /// 配置控制台输出的日志级别
         #[clap(short = 'l', long = "--level", default_value_t = LoggerLevel::INFO)]
         pub console_log_level: LoggerLevel,
@@ -58,8 +59,8 @@ pub mod soft_args {
     impl SoftArgs {
         pub fn parse() -> Self {
             let args: SoftStaticArgs = SoftStaticArgs::parse();
-            let mut attach: HashMap<String, String> = args
-                .variable
+            let mut attach: HashMap<String, String> = Some(args.variable)
+                .filter(|e| e.is_empty().not())
                 .unwrap_or(vec![])
                 .iter()
                 .map(|e| -> Vec<&str> { e.splitn(2, "=").collect() })
