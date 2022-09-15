@@ -1,7 +1,7 @@
 stages:
   - build
   - release
-build:
+args_covert:build:
   stage: build
   image: devel/rust:el7
   before_script:
@@ -17,7 +17,8 @@ build:
           directory = "vendor"
       EOF
   script:
-    - cargo test --release --offline
+    - cargo test --offline
+    - cargo build --offline
     - cargo build --release --offline
   after_script:
     - strip -s target/release/args_covert
@@ -26,10 +27,16 @@ build:
     - cp target/release/args_covert args-tools/args-tools
     - cp LICENSE args-tools/
     - tar zcf release.tgz args-tools
+    - rm args-tools/args-tools
+    - cp target/debug/args_covert args-tools/args-tools
+    - tar zcf debug.tgz args-tools
   artifacts:
     paths:
       - release.tgz
-release:
+      - debug.tgz
+args_covert:release:
+  variables:
+    PUSH_PATH: /object-release/gitlab/cloud-monitor/args-tools
   stage: release
   dependencies:
     - build
@@ -37,5 +44,11 @@ release:
   before_script:
     - mc config host add minio $S3_URL $S3_ACCESS_KEY $S3_SECRET_KEY  --api s3v4
   script:
-    - mc cp release.tgz "minio/object-release/gitlab/cloud-monitor/args_covert/release.tgz"
-    - mc cp release.tgz "minio/object-release/gitlab/cloud-monitor/args_covert/release-$(date '+%Y%m%d%H%M%S').tgz"
+    - |
+      mc cp debug.tgz "minio/${PUSH_PATH}/args-tools-debug-latest-el7.tgz"
+      mc cp debug.tgz "minio/${PUSH_PATH}/debug/args-tools-${CI_COMMIT_SHORT_SHA}-el7.tgz"
+    - |
+      if [  $CI_DEFAULT_BRANCH == $CI_COMMIT_BRANCH ]; do
+        mc cp release.tgz "minio/${PUSH_PATH}/args-tools-release-latest-el7.tgz"
+        mc cp release.tgz "minio/${PUSH_PATH}/release/args-tools-${CI_COMMIT_SHORT_SHA}-el7.tgz"
+      done
