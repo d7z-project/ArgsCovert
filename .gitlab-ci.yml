@@ -1,6 +1,6 @@
 stages:
   - build
-  - release
+  - push
 args-tools:build:
   stage: build
   image: devel/rust:el7
@@ -21,23 +21,24 @@ args-tools:build:
     - cargo build --offline
     - cargo build --release --offline
   after_script:
-    - strip -s target/release/args-tools
-    - upx -9 target/release/args-tools
-    - mkdir args-tools
-    - cp target/release/args-tools args-tools/args-tools
-    - cp LICENSE args-tools/
-    - tar zcf release.tgz args-tools
-    - rm args-tools/args-tools
-    - cp target/debug/args-tools args-tools/args-tools
-    - tar zcf debug.tgz args-tools
+    - |
+      strip -s target/release/args-tools
+      upx -9 target/release/args-tools
+      mkdir args-tools
+      cp target/release/args-tools args-tools/args-tools
+      cp LICENSE args-tools/
+      tar zcf release.tgz args-tools
+      rm args-tools/args-tools
+      cp target/debug/args-tools args-tools/args-tools
+      tar zcf debug.tgz args-tools
   artifacts:
     paths:
       - release.tgz
       - debug.tgz
-args-tools:release:
+args-tools:release:debug:
   variables:
     PUSH_PATH: /object-release/gitlab/args-tools
-  stage: release
+  stage: push
   dependencies:
     - args-tools:build
   image: tools/minio-client:latest
@@ -47,8 +48,29 @@ args-tools:release:
     - |
       mc cp debug.tgz "minio/${PUSH_PATH}/args-tools-dev.linux-amd64.tar.gz"
       mc cp debug.tgz "minio/${PUSH_PATH}/dev/args-tools-${CI_COMMIT_SHORT_SHA}.linux-amd64.tar.gz"
+args-tools:release:release:
+  variables:
+    PUSH_PATH: /object-release/gitlab/args-tools
+  stage: push
+  dependencies:
+    - args-tools:build
+  rules:
+    - if: $CI_COMMIT_TAG
+      when: never
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  image: tools/minio-client:latest
+  before_script:
+    - mc config host add minio $S3_URL $S3_ACCESS_KEY $S3_SECRET_KEY --api s3v4
+  script:
     - |
-      if [  $CI_DEFAULT_BRANCH == $CI_COMMIT_BRANCH ]; do
-        mc cp release.tgz "minio/${PUSH_PATH}/args-tools-prod.linux-amd64.tar.gz"
-        mc cp release.tgz "minio/${PUSH_PATH}/prod/args-tools-${CI_COMMIT_SHORT_SHA}.linux-amd64.tar.gz"
-      done
+      mc cp release.tgz "minio/${PUSH_PATH}/args-tools.linux-amd64.tar.gz"
+      mc cp release.tgz "minio/${PUSH_PATH}/release/args-tools-${CI_COMMIT_TAG}.linux-amd64.tar.gz"
+  release:
+    name: 'Release $TAG'
+    tag_name: '$TAG'
+    description: "args tools v$TAG"
+    ref: '$CI_COMMIT_SHA'
+    assets:
+      links:
+        - name: "args-tools-$TAG.linux-amd64.tar.gz"
+          url: "$S3_URL/$PUSH_PATH/release/args-tools-$TAG.linux-amd64.tar.gz"
