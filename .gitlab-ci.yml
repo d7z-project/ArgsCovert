@@ -35,7 +35,7 @@ args-tools:build:
     paths:
       - release.tgz
       - debug.tgz
-args-tools:release:debug:
+args-tools:push:debug:
   variables:
     PUSH_PATH: /object-release/gitlab/args-tools
   stage: push
@@ -48,7 +48,7 @@ args-tools:release:debug:
     - |
       mc cp debug.tgz "minio/${PUSH_PATH}/args-tools-dev.linux-amd64.tar.gz"
       mc cp debug.tgz "minio/${PUSH_PATH}/dev/args-tools-${CI_COMMIT_SHORT_SHA}.linux-amd64.tar.gz"
-args-tools:release:release:
+args-tools:push:release:
   variables:
     PUSH_PATH: /object-release/gitlab/args-tools
   stage: push
@@ -57,7 +57,6 @@ args-tools:release:release:
   rules:
     - if: $CI_COMMIT_TAG
       when: never
-    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
   image: tools/minio-client:latest
   before_script:
     - mc config host add minio $S3_URL $S3_ACCESS_KEY $S3_SECRET_KEY --api s3v4
@@ -65,12 +64,3 @@ args-tools:release:release:
     - |
       mc cp release.tgz "minio/${PUSH_PATH}/args-tools.linux-amd64.tar.gz"
       mc cp release.tgz "minio/${PUSH_PATH}/release/args-tools-${CI_COMMIT_TAG}.linux-amd64.tar.gz"
-  release:
-    name: 'Release $TAG'
-    tag_name: '$TAG'
-    description: "args tools v$TAG"
-    ref: '$CI_COMMIT_SHA'
-    assets:
-      links:
-        - name: "args-tools-$TAG.linux-amd64.tar.gz"
-          url: "$S3_URL/$PUSH_PATH/release/args-tools-$TAG.linux-amd64.tar.gz"
