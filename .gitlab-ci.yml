@@ -20,7 +20,7 @@ args-tools:build:
     - |
       if [ $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH ]; then
         cargo build --release --offline
-        cp target/release/args-tools args-tools
+        cp target/release/args-tools args-tools_binary
       else
         cargo build --offline
         cp target/debug/args-tools args-tools_binary
