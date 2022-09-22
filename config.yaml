@@ -48,7 +48,7 @@ args:
   - key: "--address" # 传入参数 key
     expr:
       - 'redis://{{redis.url}}' # 可以用模板变量填充，如果没找到对应的变量，则视为匹配失败
-    mode: ARG # 参数类型
+    mode: MERGE # 参数类型
     must: true # 是否为必选
     valid_regex: '^redis://(((\d{1,2})|(1\d{2})|(2[0-4]\d)|(25[0-5]))\.){3}((\d{1,2})|(1\d{2})|(2[0-4]\d)|(25[0-5]))(:[0-9]{1,5})?$' # 参数正则校验
     valid_message: '{{message.key}} 的输入格式错误,正确格式为 redis://IP:端口,而你输入的是 {{message.value}}'

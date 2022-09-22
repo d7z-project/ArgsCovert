@@ -30,6 +30,7 @@ use serde::{Deserialize, Serialize};
 use args_tools::SoftError;
 
 use crate::config::prop::RestartPolicy::ALWAYS;
+use crate::config::prop::SourceKeyArgMode::DEFAULT;
 use crate::config::prop::SourceKeyMode::ARG;
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]
@@ -205,7 +206,7 @@ fn error_message() -> String {
 }
 
 fn def_mode() -> SourceKeyMode {
-    ARG
+    ARG(DEFAULT)
 }
 
 fn def_false() -> bool {
@@ -235,9 +236,18 @@ fn i32_data_9() -> i32 {
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug, Copy, Clone)]
+#[serde(untagged)]
 pub enum SourceKeyMode {
-    ARG,
+    ARG(SourceKeyArgMode),
     ENV,
+}
+
+#[derive(Serialize, Deserialize, PartialEq, Debug, Copy, Clone)]
+pub enum SourceKeyArgMode {
+    BOOL,
+    MERGE,
+    #[serde(rename = "ARG")]
+    DEFAULT,
 }
 
 #[derive(Serialize, Deserialize, PartialEq, Debug)]

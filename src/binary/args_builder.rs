@@ -27,7 +27,7 @@ use std::{env, fs};
 
 use regex::Regex;
 
-use crate::config::prop::{ProjectArgs, ProjectConfig, SourceKeyMode};
+use crate::config::prop::{ProjectArgs, ProjectConfig, SourceKeyArgMode, SourceKeyMode};
 use crate::lib::SoftError;
 use crate::lib::SoftError::AppError;
 use crate::log::debug;
@@ -138,10 +138,18 @@ pub fn load_context(config: &ProjectConfig) -> Result<BinaryContext, SoftError> 
             x.value.to_string(),
         );
         match x.mode {
-            SourceKeyMode::ARG => {
-                out_args.push(x.key);
-                out_args.push(x.value);
-            }
+            SourceKeyMode::ARG(item) => match item {
+                SourceKeyArgMode::BOOL => {
+                    out_args.push(x.key);
+                }
+                SourceKeyArgMode::MERGE => {
+                    out_args.push(format!("{}={}", x.key, x.value));
+                }
+                SourceKeyArgMode::DEFAULT => {
+                    out_args.push(x.key);
+                    out_args.push(x.value);
+                }
+            },
             SourceKeyMode::ENV => {
                 out_envs.insert(x.key, x.value);
             }
