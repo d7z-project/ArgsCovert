@@ -24,9 +24,9 @@ args-tools:build:
       else
         cargo build --offline
         cp target/debug/args-tools args-tools_binary
-        strip -s args-tools_binary
-        upx -9 args-tools_binary
       fi
+      strip -s args-tools_binary
+      upx -9 args-tools_binary
   after_script:
     - |
       mkdir args-tools
