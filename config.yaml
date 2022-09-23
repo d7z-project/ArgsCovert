@@ -52,6 +52,11 @@ args:
     must: true # 是否为必选
     valid_regex: '^redis://(((\d{1,2})|(1\d{2})|(2[0-4]\d)|(25[0-5]))\.){3}((\d{1,2})|(1\d{2})|(2[0-4]\d)|(25[0-5]))(:[0-9]{1,5})?$' # 参数正则校验
     valid_message: '{{message.key}} 的输入格式错误,正确格式为 redis://IP:端口,而你输入的是 {{message.value}}'
+  - key: "NAMES"
+    expr:
+      - "SAAS"
+    mode: "ENV"
+    must: true
 path: # 配置文件路径
   - /etc/config
   - file://{{user.dir}}/examples/test.properties

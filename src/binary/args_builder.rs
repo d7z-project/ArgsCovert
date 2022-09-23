@@ -150,7 +150,7 @@ pub fn load_context(config: &ProjectConfig) -> Result<BinaryContext, SoftError> 
                     out_args.push(x.value);
                 }
             },
-            SourceKeyMode::ENV => {
+            SourceKeyMode::ENV(_) => {
                 out_envs.insert(x.key, x.value);
             }
         }

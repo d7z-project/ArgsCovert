@@ -239,6 +239,13 @@ fn i32_data_9() -> i32 {
 #[serde(untagged)]
 pub enum SourceKeyMode {
     ARG(SourceKeyArgMode),
+    #[serde(rename = "ENV")]
+    ENV(EnvMode),
+}
+
+#[derive(Serialize, Deserialize, PartialEq, Debug, Copy, Clone)]
+pub enum EnvMode {
+    #[serde(rename = "ENV")]
     ENV,
 }
 
